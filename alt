@@ -1,0 +1,126 @@
+#!/usr/bin/env ruby
+
+MIN_CONFIDENCE_THRESHOLD = 0.80
+MIN_FILENAME_PERCENTAGE = 0.75
+FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
+
+def display_matches(matches)
+  matches.each do |match|
+    puts "%0.20f - #{match.dir_score}: #{match.ref_path} (#{match.path})" % match.score
+  end
+  puts
+end
+
+class Match
+  attr_reader :path, :ref_path
+
+  def initialize(original_path, filename, path)
+    @original_path = original_path
+    @filename = filename
+    @ref_path = path
+    @path = path.dup
+  end
+
+  def reduce_path
+    @path = @path[1..-2] if @path.size > 1
+  end
+
+  def dir_score
+    @longest_match = find_longest_common_substring(@original_path, @path)
+    return @longest_match.count('/')
+  end
+
+  def score
+    @longest_match = find_longest_common_substring(@original_path, @path)
+    return @longest_match.length.to_f/@path.length.to_f
+  end
+
+  def find_longest_common_substring(s1, s2)
+    if (s1 == "" || s2 == "")
+      return ""
+    end
+    m = Array.new(s1.length){ [0] * s2.length }
+    longest_length, longest_end_pos = 0,0
+    (0 .. s1.length - 1).each do |x|
+      (0 .. s2.length - 1).each do |y|
+        if s1[x] == s2[y]
+          m[x][y] = 1
+          if (x > 0 && y > 0)
+            m[x][y] += m[x-1][y-1]
+          end
+          if m[x][y] > longest_length
+            longest_length = m[x][y]
+            longest_end_pos = x
+          end
+        end
+      end
+    end
+    return s1[longest_end_pos - longest_length + 1 .. longest_end_pos]
+  end
+end
+
+def find_matches(filename, original_path)
+  raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
+  raw_matches.delete(original_path) # exclude self
+  matches = raw_matches.map { |path| Match.new(original_path, filename, path) }
+  return matches.sort { |x,y| y.score <=> x.score }
+end
+
+def get_filename_minus_extension(path)
+  filename = File.basename(path, ".*") # filename without extension
+end
+
+def find_match_with_min_confidence(filename, original_path, sorted_matches)
+  puts "Finding Match with min confidence:"
+  cur_filename = filename.dup
+  while ((sorted_matches.empty? || sorted_matches.first.score < MIN_CONFIDENCE_THRESHOLD) && (cur_filename.length > filename.length * MIN_FILENAME_PERCENTAGE))
+    cur_filename = cur_filename[0..-2]
+    cur_filename.gsub!(/_$/, '')
+    puts "min conf - trying... #{cur_filename}"
+    sorted_matches = find_matches(cur_filename, original_path)
+    display_matches(sorted_matches) # FIXME: remove this
+  end
+  return sorted_matches
+end
+
+def find_best_match(sorted_matches)
+  puts "Finding BEST Match"
+  while ((!sorted_matches.empty?) && sorted_matches.first.score < FINAL_MATCH_CONFIDENCE_THRESHOLD && sorted_matches.first.path.length > sorted_matches.first.ref_path.length * MIN_FILENAME_PERCENTAGE)
+    # puts "best match - trying..."
+    sorted_matches.each { |match| match.reduce_path }
+    sorted_matches = sorted_matches.sort { |x,y| y.score <=> x.score }
+    display_matches(sorted_matches) # FIXME: remove this
+  end
+  return sorted_matches
+end
+
+def trim_results(sorted_matches)
+  puts "Triming results"
+  sorted_matches.delete_if { |m| m.score < FINAL_MATCH_CONFIDENCE_THRESHOLD }
+  sorted_matches
+end
+
+original_path = ARGV[0]
+
+filename = nil
+orig_filename = nil
+sorted_matches = []
+
+filename = get_filename_minus_extension(original_path)
+orig_filename = filename.dup
+
+sorted_matches = find_matches(filename, original_path)
+
+puts "Initial Matches:"
+display_matches(sorted_matches) # FIXME: remove this
+
+sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+
+# display_matches(sorted_matches)
+
+sorted_matches = find_best_match(sorted_matches)
+
+sorted_matches = trim_results(sorted_matches)
+
+puts "Sorted Matches:"
+display_matches(sorted_matches)
