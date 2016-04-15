@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Changed`: debug output to understand matches to be more valuable
+* `Fixed`: bug where path cleansing was incorrectly skewing scores
+
 #### [v0.0.1][v0.0.1] - 2016-04-15
 
 * `Added`: initial functional version with basic docs

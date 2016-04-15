@@ -10,30 +10,24 @@ MIN_CONFIDENCE_THRESHOLD = 0.75
 MIN_FILENAME_PERCENTAGE = 0.50
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
 
-class Match
-  attr_reader :path, :ref_path
+# Judge
+#
+# The judge exists to help score a potential match given a query
+#
+# @since 0.0.2
+class Judge
 
-  def initialize(original_path, filename, path)
-    @original_path = original_path
-    @filename = filename
-    @ref_path = path
-    @path = path.dup
+  # Score a string against a query#
+  #
+  # @return [Float] between 0 and 1
+  def self.score(query, str)
+    longest_match = find_longest_common_substring(query, str)
+    return longest_match.length.to_f/str.length.to_f
   end
 
-  def reduce_path
-    @path = @path[1..-2] if @path.size > 1
-  end
+  private
 
-  def clean_path(path)
-    return path.gsub(/^(feature|spec|test)\//, '').gsub(/(_spec\.rb|_test\.rb|_steps\.rb)$/, '')
-  end
-
-  def score
-    @longest_match = find_longest_common_substring(clean_path(@original_path), clean_path(@path))
-    return @longest_match.length.to_f/clean_path(@path).length.to_f
-  end
-
-  def find_longest_common_substring(s1, s2)
+  def self.find_longest_common_substring(s1, s2)
     if (s1 == "" || s2 == "")
       return ""
     end
@@ -54,6 +48,29 @@ class Match
       end
     end
     return s1[longest_end_pos - longest_length + 1 .. longest_end_pos]
+  end
+end
+
+class Match
+  attr_reader :path, :ref_path, :original_path, :filename
+
+  def initialize(original_path, filename, path)
+    @original_path = original_path
+    @filename = filename
+    @ref_path = path
+    @path = path.dup
+  end
+
+  def reduce_path
+    @path = @path[1..-2] if @path.size > 1
+  end
+
+  def clean_path(path)
+    return path.gsub(/^(feature|spec|test)\//, '').gsub(/(_spec|_test|_steps)/, '')
+  end
+
+  def score
+    return Judge.score(clean_path(@original_path), clean_path(@path))
   end
 end
 
@@ -188,7 +205,21 @@ module Alt
 
     def debug(description, &block)
       result = block.call
-      puts "#{description}: #{result.inspect}" if @options[:debug]
+      if @options[:debug]
+        if result.is_a?(Array)
+          puts "#{description}:"
+          result.each do |item|
+            if item.is_a?(Match)
+              puts "%.20f : #{item.original_path.gsub('%', '')} - #{item.filename} - #{item.ref_path.gsub('%', '')} (#{item.path.gsub('%', '')})" % item.score
+            else
+              puts item.inspect
+            end
+          end
+        else
+          puts "#{description}: #{result.inspect}"
+        end
+        puts
+      end
     end
 
     def parse_options
