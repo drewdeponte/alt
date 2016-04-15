@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
+
 MIN_CONFIDENCE_THRESHOLD = 0.75
 MIN_FILENAME_PERCENTAGE = 0.75
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
@@ -106,27 +108,58 @@ def trim_results(sorted_matches)
   sorted_matches
 end
 
-original_path = ARGV[0].dup
-original_path.gsub!(/^\.\//, '')
+module Alt
 
-filename = nil
-orig_filename = nil
-sorted_matches = []
 
-filename = get_filename_minus_extension(original_path)
-orig_filename = filename.dup
+  class Cli
+    VERSION='0.0.1'
 
-sorted_matches = find_matches(filename, original_path)
+    def initialize(argv: ARGV)
+      @argv = argv
+      @options = {}
+      parse_options
+    end
 
-sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+    def parse_options
+      OptionParser.new do |opts|
+        opts.banner = "Usage: alt [options] <path>"
 
-sorted_matches = find_best_match(sorted_matches)
+        opts.on('-v', '--version', 'Display version') do |v|
+          @options[:version] = true
+        end
+      end.parse!
+    end
 
-sorted_matches = trim_results(sorted_matches)
+    def run
+      $stdout.write("act v#{Alt::Cli::VERSION}\n") if @options[:version]
 
-if sorted_matches.empty?
-  $stdout.write('')
-else
-  $stdout.write(sorted_matches.first.ref_path)
+      original_path = ARGV[0].dup
+      original_path.gsub!(/^\.\//, '')
+
+      filename = nil
+      orig_filename = nil
+      sorted_matches = []
+
+      filename = get_filename_minus_extension(original_path)
+      orig_filename = filename.dup
+
+      sorted_matches = find_matches(filename, original_path)
+
+      sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+
+      sorted_matches = find_best_match(sorted_matches)
+
+      sorted_matches = trim_results(sorted_matches)
+
+      if sorted_matches.empty?
+        $stdout.write('')
+      else
+        $stdout.write(sorted_matches.first.ref_path)
+      end
+
+      return 0
+    end
+  end
 end
 
+exit Alt::Cli.new.run
