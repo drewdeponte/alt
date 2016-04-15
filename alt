@@ -3,7 +3,7 @@
 require 'optparse'
 
 MIN_CONFIDENCE_THRESHOLD = 0.75
-MIN_FILENAME_PERCENTAGE = 0.75
+MIN_FILENAME_PERCENTAGE = 0.50
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
 
 class Match
@@ -61,7 +61,6 @@ def find_matches(filename, original_path)
   raw_matches = nil
   if test_file?(original_path)
     raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
-    # strip exclude test paths
     raw_matches.reject! { |m| test_file?(m) }
   else
     raw_matches = Dir.glob("features/**/*#{filename}*").reject { |rm| File.directory?(rm) }
@@ -77,7 +76,7 @@ def find_matches(filename, original_path)
 end
 
 def get_filename_minus_extension(path)
-  filename = File.basename(path, ".*") # filename without extension
+  File.basename(path, ".*") # filename without extension
 end
 
 def find_match_with_min_confidence(filename, original_path, sorted_matches)
@@ -101,6 +100,10 @@ end
 def trim_results(sorted_matches)
   sorted_matches.delete_if { |m| m.score < FINAL_MATCH_CONFIDENCE_THRESHOLD }
   sorted_matches
+end
+
+def strip_test_words(filename)
+  filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
 end
 
 module Alt
@@ -127,7 +130,7 @@ module Alt
     def initialize(argv: ARGV)
       @argv = argv
       @path = nil
-      @options = { :version => false, :stdin => false }
+      @options = { version: false, stdin: false, debug: false }
       parse_options
       parse_args
     end
@@ -145,15 +148,28 @@ module Alt
       sorted_matches = []
 
       filename = get_filename_minus_extension(original_path)
-      orig_filename = filename.dup
 
-      sorted_matches = find_matches(filename, original_path)
+      filename = strip_test_words(filename) if test_file?(original_path)
 
-      sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+      debug "filename" do
+        orig_filename = filename.dup
+      end
 
-      sorted_matches = find_best_match(sorted_matches)
+      debug "sorted_matches after find_matches" do
+        sorted_matches = find_matches(filename, original_path)
+      end
 
-      sorted_matches = trim_results(sorted_matches)
+      debug "sorted_matches after find_match_with_min_confidence" do
+        sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+      end
+
+      debug "sorted_matches after find_best_match" do
+        sorted_matches = find_best_match(sorted_matches)
+      end
+
+      debug "sorted_matches after trim_results" do
+        sorted_matches = trim_results(sorted_matches)
+      end
 
       if sorted_matches.empty?
         $stdout.write('')
@@ -166,12 +182,21 @@ module Alt
 
     private
 
+    def debug(description, &block)
+      result = block.call
+      puts "#{description}: #{result.inspect}" if @options[:debug]
+    end
+
     def parse_options
       OptionParser.new do |opts|
         opts.banner = "Usage: alt [options] <path>"
 
         opts.on('-v', '--version', 'Display version') do
           @options[:version] = true
+        end
+
+        opts.on('-d', '--debug', 'Debug mode') do
+          @options[:debug] = true
         end
 
         opts.on('--', '--', 'Use stdin as possible files') do
