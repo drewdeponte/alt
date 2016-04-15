@@ -4,13 +4,6 @@ MIN_CONFIDENCE_THRESHOLD = 0.75
 MIN_FILENAME_PERCENTAGE = 0.75
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
 
-def display_matches(matches)
-  matches.each do |match|
-    puts "%0.20f - #{match.dir_score}: #{match.ref_path} (#{match.path})" % match.score
-  end
-  puts
-end
-
 class Match
   attr_reader :path, :ref_path
 
@@ -91,31 +84,24 @@ def get_filename_minus_extension(path)
 end
 
 def find_match_with_min_confidence(filename, original_path, sorted_matches)
-  # puts "Finding Match with min confidence:"
   cur_filename = filename.dup
   while ((sorted_matches.empty? || sorted_matches.first.score < MIN_CONFIDENCE_THRESHOLD) && (cur_filename.length > filename.length * MIN_FILENAME_PERCENTAGE))
     cur_filename = cur_filename[0..-2]
     cur_filename.gsub!(/_$/, '')
-    # puts "min conf - trying... #{cur_filename}"
     sorted_matches = find_matches(cur_filename, original_path)
-    # display_matches(sorted_matches) # FIXME: remove this
   end
   return sorted_matches
 end
 
 def find_best_match(sorted_matches)
-  # puts "Finding BEST Match"
   while ((!sorted_matches.empty?) && sorted_matches.first.score < FINAL_MATCH_CONFIDENCE_THRESHOLD && sorted_matches.first.path.length > sorted_matches.first.ref_path.length * MIN_FILENAME_PERCENTAGE)
-    # puts "best match - trying..."
     sorted_matches.each { |match| match.reduce_path }
     sorted_matches = sorted_matches.sort { |x,y| y.score <=> x.score }
-    # display_matches(sorted_matches) # FIXME: remove this
   end
   return sorted_matches
 end
 
 def trim_results(sorted_matches)
-  # puts "Triming results"
   sorted_matches.delete_if { |m| m.score < FINAL_MATCH_CONFIDENCE_THRESHOLD }
   sorted_matches
 end
@@ -130,28 +116,17 @@ sorted_matches = []
 filename = get_filename_minus_extension(original_path)
 orig_filename = filename.dup
 
-# $stdout.write("#{original_path},")
-
 sorted_matches = find_matches(filename, original_path)
 
-# display_matches(sorted_matches) # FIXME: remove this
-
 sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
-
-# display_matches(sorted_matches)
 
 sorted_matches = find_best_match(sorted_matches)
 
 sorted_matches = trim_results(sorted_matches)
 
-# puts "Sorted Matches:"
-# display_matches(sorted_matches)
-# 
 if sorted_matches.empty?
-#   $stdout.write("empty,empty\n")
   $stdout.write('')
 else
   $stdout.write(sorted_matches.first.ref_path)
-#   $stdout.write("#{sorted_matches.first.ref_path},#{sorted_matches.first.path}\n")
 end
 
