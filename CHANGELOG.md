@@ -10,4 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
-[unreleased]: https://github.com/cyphactor/alt/compare/7c9b152...HEAD
+#### [v0.0.1][v0.0.1] - 2016-04-15
+
+* `Added`: initial functional version with basic docs
+
+[unreleased]: https://github.com/cyphactor/alt/compare/v0.0.1...HEAD
+[v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
