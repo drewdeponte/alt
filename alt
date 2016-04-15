@@ -24,11 +24,6 @@ class Match
     return path.gsub(/^(feature|spec|test)\//, '').gsub(/(_spec\.rb|_test\.rb|_steps\.rb)$/, '')
   end
 
-  def dir_score
-    @longest_match = find_longest_common_substring(clean_path(@original_path), clean_path(@path))
-    return @longest_match.count('/')
-  end
-
   def score
     @longest_match = find_longest_common_substring(clean_path(@original_path), clean_path(@path))
     return @longest_match.length.to_f/clean_path(@path).length.to_f
@@ -109,29 +104,38 @@ def trim_results(sorted_matches)
 end
 
 module Alt
+  class Path < String
+    def intialize(path)
+      super(path.dup)
+      cleanse_path
+    end
 
+    def test_file?
+      self.start_with?('features/','test/', 'spec/')
+    end
+
+    private
+
+    def cleanse_path
+      self.gsub!(/^\.\//, '')
+    end
+  end
 
   class Cli
     VERSION='0.0.1'
 
     def initialize(argv: ARGV)
       @argv = argv
-      @options = {}
+      @path = nil
+      @options = { :version => false, :stdin => false }
       parse_options
-    end
-
-    def parse_options
-      OptionParser.new do |opts|
-        opts.banner = "Usage: alt [options] <path>"
-
-        opts.on('-v', '--version', 'Display version') do |v|
-          @options[:version] = true
-        end
-      end.parse!
+      parse_args
     end
 
     def run
-      $stdout.write("act v#{Alt::Cli::VERSION}\n") if @options[:version]
+      display_version and exit 0 if @options[:version]
+
+      puts read_possible_files_from_stdin.inspect and exit 0 if @options[:stdin]
 
       original_path = ARGV[0].dup
       original_path.gsub!(/^\.\//, '')
@@ -158,6 +162,34 @@ module Alt
       end
 
       return 0
+    end
+
+    private
+
+    def parse_options
+      OptionParser.new do |opts|
+        opts.banner = "Usage: alt [options] <path>"
+
+        opts.on('-v', '--version', 'Display version') do
+          @options[:version] = true
+        end
+
+        opts.on('--', '--', 'Use stdin as possible files') do
+          @options[:stdin] = true
+        end
+      end.parse!
+    end
+
+    def parse_args
+      @path = Path.new(@argv[0]) if @argv.length > 0
+    end
+
+    def display_version
+      $stdout.write("act v#{Alt::Cli::VERSION}\n") 
+    end
+
+    def read_possible_files_from_stdin
+      $stdin.readlines
     end
   end
 end
