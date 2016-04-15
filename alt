@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+if RUBY_VERSION < '1.9.3'
+  abort 'error: Alt requires Ruby 1.9.3 or higher'
+end
+
 require 'optparse'
 
 MIN_CONFIDENCE_THRESHOLD = 0.75
