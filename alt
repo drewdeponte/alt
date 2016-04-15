@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-MIN_CONFIDENCE_THRESHOLD = 0.80
+MIN_CONFIDENCE_THRESHOLD = 0.75
 MIN_FILENAME_PERCENTAGE = 0.75
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
 
@@ -25,14 +25,18 @@ class Match
     @path = @path[1..-2] if @path.size > 1
   end
 
+  def clean_path(path)
+    return path.gsub(/^(feature|spec|test)\//, '').gsub(/(_spec\.rb|_test\.rb|_steps\.rb)$/, '')
+  end
+
   def dir_score
-    @longest_match = find_longest_common_substring(@original_path, @path)
+    @longest_match = find_longest_common_substring(clean_path(@original_path), clean_path(@path))
     return @longest_match.count('/')
   end
 
   def score
-    @longest_match = find_longest_common_substring(@original_path, @path)
-    return @longest_match.length.to_f/@path.length.to_f
+    @longest_match = find_longest_common_substring(clean_path(@original_path), clean_path(@path))
+    return @longest_match.length.to_f/clean_path(@path).length.to_f
   end
 
   def find_longest_common_substring(s1, s2)
@@ -59,9 +63,25 @@ class Match
   end
 end
 
+def test_file?(original_path)
+  original_path.start_with?('features/','test/', 'spec/')
+end
+
 def find_matches(filename, original_path)
-  raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
+  raw_matches = nil
+  if test_file?(original_path)
+    raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
+    # strip exclude test paths
+    raw_matches.reject! { |m| test_file?(m) }
+  else
+    raw_matches = Dir.glob("features/**/*#{filename}*").reject { |rm| File.directory?(rm) }
+    raw_matches.concat(Dir.glob("test/**/*#{filename}*").reject { |rm| File.directory?(rm) })
+    raw_matches.concat(Dir.glob("spec/**/*#{filename}*").reject { |rm| File.directory?(rm) })
+    raw_matches.uniq!
+  end
+
   raw_matches.delete(original_path) # exclude self
+
   matches = raw_matches.map { |path| Match.new(original_path, filename, path) }
   return matches.sort { |x,y| y.score <=> x.score }
 end
@@ -71,36 +91,37 @@ def get_filename_minus_extension(path)
 end
 
 def find_match_with_min_confidence(filename, original_path, sorted_matches)
-  puts "Finding Match with min confidence:"
+  # puts "Finding Match with min confidence:"
   cur_filename = filename.dup
   while ((sorted_matches.empty? || sorted_matches.first.score < MIN_CONFIDENCE_THRESHOLD) && (cur_filename.length > filename.length * MIN_FILENAME_PERCENTAGE))
     cur_filename = cur_filename[0..-2]
     cur_filename.gsub!(/_$/, '')
-    puts "min conf - trying... #{cur_filename}"
+    # puts "min conf - trying... #{cur_filename}"
     sorted_matches = find_matches(cur_filename, original_path)
-    display_matches(sorted_matches) # FIXME: remove this
+    # display_matches(sorted_matches) # FIXME: remove this
   end
   return sorted_matches
 end
 
 def find_best_match(sorted_matches)
-  puts "Finding BEST Match"
+  # puts "Finding BEST Match"
   while ((!sorted_matches.empty?) && sorted_matches.first.score < FINAL_MATCH_CONFIDENCE_THRESHOLD && sorted_matches.first.path.length > sorted_matches.first.ref_path.length * MIN_FILENAME_PERCENTAGE)
     # puts "best match - trying..."
     sorted_matches.each { |match| match.reduce_path }
     sorted_matches = sorted_matches.sort { |x,y| y.score <=> x.score }
-    display_matches(sorted_matches) # FIXME: remove this
+    # display_matches(sorted_matches) # FIXME: remove this
   end
   return sorted_matches
 end
 
 def trim_results(sorted_matches)
-  puts "Triming results"
+  # puts "Triming results"
   sorted_matches.delete_if { |m| m.score < FINAL_MATCH_CONFIDENCE_THRESHOLD }
   sorted_matches
 end
 
-original_path = ARGV[0]
+original_path = ARGV[0].dup
+original_path.gsub!(/^\.\//, '')
 
 filename = nil
 orig_filename = nil
@@ -109,10 +130,11 @@ sorted_matches = []
 filename = get_filename_minus_extension(original_path)
 orig_filename = filename.dup
 
+# $stdout.write("#{original_path},")
+
 sorted_matches = find_matches(filename, original_path)
 
-puts "Initial Matches:"
-display_matches(sorted_matches) # FIXME: remove this
+# display_matches(sorted_matches) # FIXME: remove this
 
 sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
 
@@ -122,5 +144,14 @@ sorted_matches = find_best_match(sorted_matches)
 
 sorted_matches = trim_results(sorted_matches)
 
-puts "Sorted Matches:"
-display_matches(sorted_matches)
+# puts "Sorted Matches:"
+# display_matches(sorted_matches)
+# 
+if sorted_matches.empty?
+#   $stdout.write("empty,empty\n")
+  $stdout.write('')
+else
+  $stdout.write(sorted_matches.first.ref_path)
+#   $stdout.write("#{sorted_matches.first.ref_path},#{sorted_matches.first.path}\n")
+end
+
