@@ -48,5 +48,5 @@ function! AltCommand(path, vim_command)
 endfunction
 
 " Find the alternate file for the current path and open it
-nnoremap <leader>. :call AltCommand(expand('%'), ':e')<cr>
+nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
 ```
