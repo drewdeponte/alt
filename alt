@@ -23,6 +23,131 @@ MIN_CONFIDENCE_THRESHOLD = 0.75
 MIN_FILENAME_PERCENTAGE = 0.50
 FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
 
+class Path < String
+  def intialize(path)
+    super(path.dup)
+    cleanse_path
+  end
+
+  def test_file?
+    self.start_with?('features/','test/', 'spec/')
+  end
+
+  private
+
+  def cleanse_path
+    self.gsub!(/^\.\//, '')
+  end
+end
+
+class Alt
+  VERSION='0.0.1'
+
+  def initialize(argv: ARGV)
+    @argv = argv
+    @path = nil
+    @options = { version: false, stdin: false, debug: false }
+    parse_options
+    parse_args
+  end
+
+  def main
+    display_version and exit 0 if @options[:version]
+
+    puts read_possible_files_from_stdin.inspect and exit 0 if @options[:stdin]
+
+    original_path = ARGV[0].dup
+    original_path.gsub!(/^\.\//, '')
+
+    filename = nil
+    orig_filename = nil
+    sorted_matches = []
+
+    filename = get_filename_minus_extension(original_path)
+
+    filename = strip_test_words(filename) if test_file?(original_path)
+
+    debug "filename" do
+      orig_filename = filename.dup
+    end
+
+    debug "sorted_matches after find_matches" do
+      sorted_matches = find_matches(filename, original_path)
+    end
+
+    debug "sorted_matches after find_match_with_min_confidence" do
+      sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
+    end
+
+    debug "sorted_matches after find_best_match" do
+      sorted_matches = find_best_match(sorted_matches)
+    end
+
+    debug "sorted_matches after trim_results" do
+      sorted_matches = trim_results(sorted_matches)
+    end
+
+    if sorted_matches.empty?
+      $stdout.write('')
+    else
+      $stdout.write(sorted_matches.first.ref_path)
+    end
+
+    return 0
+  end
+
+  private
+
+  def debug(description, &block)
+    result = block.call
+    if @options[:debug]
+      if result.is_a?(Array)
+        puts "#{description}:"
+        result.each do |item|
+          if item.is_a?(Match)
+            puts "%.20f : #{item.original_path.gsub('%', '')} - #{item.filename} - #{item.ref_path.gsub('%', '')} (#{item.path.gsub('%', '')})" % item.score
+          else
+            puts item.inspect
+          end
+        end
+      else
+        puts "#{description}: #{result.inspect}"
+      end
+      puts
+    end
+  end
+
+  def parse_options
+    OptionParser.new do |opts|
+      opts.banner = "Usage: alt [options] <path>"
+
+      opts.on('-v', '--version', 'Display version') do
+        @options[:version] = true
+      end
+
+      opts.on('-d', '--debug', 'Debug mode') do
+        @options[:debug] = true
+      end
+
+      opts.on('--', '--', 'Use stdin as possible files') do
+        @options[:stdin] = true
+      end
+    end.parse!
+  end
+
+  def parse_args
+    @path = Path.new(@argv[0]) if @argv.length > 0
+  end
+
+  def display_version
+    $stdout.write("act v#{Alt::VERSION}\n") 
+  end
+
+  def read_possible_files_from_stdin
+    $stdin.readlines
+  end
+end
+
 # Judge
 #
 # The judge exists to help score a potential match given a query
@@ -140,133 +265,7 @@ def strip_test_words(filename)
   filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
 end
 
-module Alt
-  class Path < String
-    def intialize(path)
-      super(path.dup)
-      cleanse_path
-    end
-
-    def test_file?
-      self.start_with?('features/','test/', 'spec/')
-    end
-
-    private
-
-    def cleanse_path
-      self.gsub!(/^\.\//, '')
-    end
-  end
-
-  class Cli
-    VERSION='0.0.1'
-
-    def initialize(argv: ARGV)
-      @argv = argv
-      @path = nil
-      @options = { version: false, stdin: false, debug: false }
-      parse_options
-      parse_args
-    end
-
-    def run
-      display_version and exit 0 if @options[:version]
-
-      puts read_possible_files_from_stdin.inspect and exit 0 if @options[:stdin]
-
-      original_path = ARGV[0].dup
-      original_path.gsub!(/^\.\//, '')
-
-      filename = nil
-      orig_filename = nil
-      sorted_matches = []
-
-      filename = get_filename_minus_extension(original_path)
-
-      filename = strip_test_words(filename) if test_file?(original_path)
-
-      debug "filename" do
-        orig_filename = filename.dup
-      end
-
-      debug "sorted_matches after find_matches" do
-        sorted_matches = find_matches(filename, original_path)
-      end
-
-      debug "sorted_matches after find_match_with_min_confidence" do
-        sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
-      end
-
-      debug "sorted_matches after find_best_match" do
-        sorted_matches = find_best_match(sorted_matches)
-      end
-
-      debug "sorted_matches after trim_results" do
-        sorted_matches = trim_results(sorted_matches)
-      end
-
-      if sorted_matches.empty?
-        $stdout.write('')
-      else
-        $stdout.write(sorted_matches.first.ref_path)
-      end
-
-      return 0
-    end
-
-    private
-
-    def debug(description, &block)
-      result = block.call
-      if @options[:debug]
-        if result.is_a?(Array)
-          puts "#{description}:"
-          result.each do |item|
-            if item.is_a?(Match)
-              puts "%.20f : #{item.original_path.gsub('%', '')} - #{item.filename} - #{item.ref_path.gsub('%', '')} (#{item.path.gsub('%', '')})" % item.score
-            else
-              puts item.inspect
-            end
-          end
-        else
-          puts "#{description}: #{result.inspect}"
-        end
-        puts
-      end
-    end
-
-    def parse_options
-      OptionParser.new do |opts|
-        opts.banner = "Usage: alt [options] <path>"
-
-        opts.on('-v', '--version', 'Display version') do
-          @options[:version] = true
-        end
-
-        opts.on('-d', '--debug', 'Debug mode') do
-          @options[:debug] = true
-        end
-
-        opts.on('--', '--', 'Use stdin as possible files') do
-          @options[:stdin] = true
-        end
-      end.parse!
-    end
-
-    def parse_args
-      @path = Path.new(@argv[0]) if @argv.length > 0
-    end
-
-    def display_version
-      $stdout.write("act v#{Alt::Cli::VERSION}\n") 
-    end
-
-    def read_possible_files_from_stdin
-      $stdin.readlines
-    end
-  end
-end
 
 if $0 == __FILE__
-  exit Alt::Cli.new.run
+  exit Alt.new.main
 end
