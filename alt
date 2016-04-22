@@ -56,7 +56,7 @@ class Alt
 
     puts read_possible_files_from_stdin.inspect and exit 0 if @options[:stdin]
 
-    original_path = ARGV[0].dup
+    original_path = @argv[0].dup
     original_path.gsub!(/^\.\//, '')
 
     filename = nil
@@ -140,7 +140,7 @@ class Alt
   end
 
   def display_version
-    $stdout.write("act v#{Alt::VERSION}\n") 
+    $stdout.write("act v#{Alt::VERSION}\n")
   end
 
   def read_possible_files_from_stdin
@@ -217,18 +217,15 @@ def test_file?(original_path)
 end
 
 def find_matches(filename, original_path)
-  raw_matches = nil
+  raw_matches = []
   if test_file?(original_path)
-    raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
-    raw_matches.reject! { |m| test_file?(m) }
+    Dir.glob('*/').each do |dir|
+      next if %w[features/ test/ spec/].include?(dir)
+      raw_matches.concat Dir.glob("#{dir}**/*#{filename}*.rb")
+    end
   else
-    raw_matches = Dir.glob("features/**/*#{filename}*").reject { |rm| File.directory?(rm) }
-    raw_matches.concat(Dir.glob("test/**/*#{filename}*").reject { |rm| File.directory?(rm) })
-    raw_matches.concat(Dir.glob("spec/**/*#{filename}*").reject { |rm| File.directory?(rm) })
-    raw_matches.uniq!
+    raw_matches = Dir.glob("{features,test,spec}/**/*#{filename}*.rb")
   end
-
-  raw_matches.delete(original_path) # exclude self
 
   matches = raw_matches.map { |path| Match.new(original_path, filename, path) }
   return matches.sort { |x,y| y.score <=> x.score }
