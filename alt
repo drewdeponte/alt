@@ -18,27 +18,7 @@ if RUBY_VERSION < '1.9.3'
 end
 
 require 'optparse'
-
-MIN_CONFIDENCE_THRESHOLD = 0.75
-MIN_FILENAME_PERCENTAGE = 0.50
-FINAL_MATCH_CONFIDENCE_THRESHOLD = 0.90
-
-class Path < String
-  def intialize(path)
-    super(path.dup)
-    cleanse_path
-  end
-
-  def test_file?
-    self.start_with?('features/','test/', 'spec/')
-  end
-
-  private
-
-  def cleanse_path
-    self.gsub!(/^\.\//, '')
-  end
-end
+require 'benchmark'
 
 class Alt
   VERSION='0.0.1'
@@ -54,43 +34,55 @@ class Alt
   def main
     display_version and exit 0 if @options[:version]
 
-    puts read_possible_files_from_stdin.inspect and exit 0 if @options[:stdin]
+    highest_score = 0
+    highest_scored_poss_alt_path = nil
 
-    original_path = ARGV[0].dup
-    original_path.gsub!(/^\.\//, '')
+    skipped_things = 0
 
-    filename = nil
-    orig_filename = nil
-    sorted_matches = []
-
-    filename = get_filename_minus_extension(original_path)
-
-    filename = strip_test_words(filename) if test_file?(original_path)
-
-    debug "filename" do
-      orig_filename = filename.dup
-    end
-
-    debug "sorted_matches after find_matches" do
-      sorted_matches = find_matches(filename, original_path)
-    end
-
-    debug "sorted_matches after find_match_with_min_confidence" do
-      sorted_matches = find_match_with_min_confidence(filename, original_path, sorted_matches)
-    end
-
-    debug "sorted_matches after find_best_match" do
-      sorted_matches = find_best_match(sorted_matches)
-    end
-
-    debug "sorted_matches after trim_results" do
-      sorted_matches = trim_results(sorted_matches)
-    end
-
-    if sorted_matches.empty?
-      $stdout.write('')
+    possible_alternate_paths = []
+    if @options[:stdin]
+      possible_alternate_paths = get_possible_files_from_stdin
     else
-      $stdout.write(sorted_matches.first.ref_path)
+      possible_alternate_paths = get_possible_files_from_glob
+    end
+
+    filename = get_filename_minus_extension(@path)
+    filename = strip_test_words(filename) if @path.test_file?
+    filtered_possible_alternate_paths = possible_alternate_paths.select { |p| p.include?(filename) }
+
+    filtered_possible_alternate_paths.each do |poss_alt_path|
+      if @path.test_file?
+        if Path.new(poss_alt_path).test_file?
+          skipped_things = skipped_things + 1
+          next
+        end
+      else
+        if !Path.new(poss_alt_path).test_file?
+          skipped_things = skipped_things + 1
+          next
+        end
+      end
+
+      score = Judge.score(poss_alt_path, @path)
+      if score > highest_score
+        highest_score = score
+        highest_scored_poss_alt_path = poss_alt_path
+      end
+
+      debug "#{score}: #{@path} - #{poss_alt_path}"
+    end
+
+    debug "path to find alternate for: #{@path}"
+    debug "# possible alternate paths: #{possible_alternate_paths.count}"
+    debug "# skipped_things: #{skipped_things}"
+    debug "# processed: #{possible_alternate_paths.count - skipped_things}"
+    debug "highest_score: #{highest_score}"
+    debug "highest_scored_poss_alt_path: #{highest_scored_poss_alt_path}"
+
+    if highest_scored_poss_alt_path
+      $stdout.write(highest_scored_poss_alt_path)
+    else
+      $stdout.write('')
     end
 
     return 0
@@ -98,22 +90,9 @@ class Alt
 
   private
 
-  def debug(description, &block)
-    result = block.call
+  def debug(description)
     if @options[:debug]
-      if result.is_a?(Array)
-        puts "#{description}:"
-        result.each do |item|
-          if item.is_a?(Match)
-            puts "%.20f : #{item.original_path.gsub('%', '')} - #{item.filename} - #{item.ref_path.gsub('%', '')} (#{item.path.gsub('%', '')})" % item.score
-          else
-            puts item.inspect
-          end
-        end
-      else
-        puts "#{description}: #{result.inspect}"
-      end
-      puts
+      puts description
     end
   end
 
@@ -143,24 +122,28 @@ class Alt
     $stdout.write("act v#{Alt::VERSION}\n") 
   end
 
-  def read_possible_files_from_stdin
+  def get_possible_files_from_stdin
     $stdin.readlines
+  end
+
+  def get_possible_files_from_glob
+    Dir.glob("**/*").reject { |p| File.directory?(p) }
+  end
+
+  def get_filename_minus_extension(path)
+    File.basename(path, ".*") # filename without extension
+  end
+
+  def strip_test_words(filename)
+    filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
   end
 end
 
-# Judge
-#
-# The judge exists to help score a potential match given a query
-#
-# @since 0.0.2
 class Judge
-
-  # Score a string against a query#
-  #
-  # @return [Float] between 0 and 1
   def self.score(query, str)
     longest_match = find_longest_common_substring(query, str)
-    return longest_match.length.to_f/str.length.to_f
+    # longest_match = "aueaeoua"
+    return (longest_match.length.to_f/str.length.to_f) * (longest_match.length.to_f/query.length.to_f)
   end
 
   private
@@ -189,82 +172,26 @@ class Judge
   end
 end
 
-class Match
-  attr_reader :path, :ref_path, :original_path, :filename
-
-  def initialize(original_path, filename, path)
-    @original_path = original_path
-    @filename = filename
-    @ref_path = path
-    @path = path.dup
+class Path < String
+  def intialize(path)
+    super(path.dup)
+    cleanse_path
   end
 
-  def reduce_path
-    @path = @path[1..-2] if @path.size > 1
+  def test_file?
+    self.start_with?('features/','test/', 'spec/')
   end
 
-  def clean_path(path)
-    return path.gsub(/^(feature|spec|test)\//, '').gsub(/(_spec|_test|_steps)/, '')
+  def directory?
+    File.directory?(self)
   end
 
-  def score
-    return Judge.score(clean_path(@original_path), clean_path(@path))
+  private
+
+  def cleanse_path
+    self.gsub!(/^\.\//, '')
   end
 end
-
-def test_file?(original_path)
-  original_path.start_with?('features/','test/', 'spec/')
-end
-
-def find_matches(filename, original_path)
-  raw_matches = nil
-  if test_file?(original_path)
-    raw_matches = Dir.glob("**/*#{filename}*").reject { |rm| File.directory?(rm) }
-    raw_matches.reject! { |m| test_file?(m) }
-  else
-    raw_matches = Dir.glob("features/**/*#{filename}*").reject { |rm| File.directory?(rm) }
-    raw_matches.concat(Dir.glob("test/**/*#{filename}*").reject { |rm| File.directory?(rm) })
-    raw_matches.concat(Dir.glob("spec/**/*#{filename}*").reject { |rm| File.directory?(rm) })
-    raw_matches.uniq!
-  end
-
-  raw_matches.delete(original_path) # exclude self
-
-  matches = raw_matches.map { |path| Match.new(original_path, filename, path) }
-  return matches.sort { |x,y| y.score <=> x.score }
-end
-
-def get_filename_minus_extension(path)
-  File.basename(path, ".*") # filename without extension
-end
-
-def find_match_with_min_confidence(filename, original_path, sorted_matches)
-  cur_filename = filename.dup
-  while ((sorted_matches.empty? || sorted_matches.first.score < MIN_CONFIDENCE_THRESHOLD) && (cur_filename.length > filename.length * MIN_FILENAME_PERCENTAGE))
-    cur_filename = cur_filename[0..-2]
-    cur_filename.gsub!(/_$/, '')
-    sorted_matches = find_matches(cur_filename, original_path)
-  end
-  return sorted_matches
-end
-
-def find_best_match(sorted_matches)
-  while ((!sorted_matches.empty?) && sorted_matches.first.score < FINAL_MATCH_CONFIDENCE_THRESHOLD && sorted_matches.first.path.length > sorted_matches.first.ref_path.length * MIN_FILENAME_PERCENTAGE)
-    sorted_matches.each { |match| match.reduce_path }
-    sorted_matches = sorted_matches.sort { |x,y| y.score <=> x.score }
-  end
-  return sorted_matches
-end
-
-def trim_results(sorted_matches)
-  sorted_matches.delete_if { |m| m.score < FINAL_MATCH_CONFIDENCE_THRESHOLD }
-  sorted_matches
-end
-
-def strip_test_words(filename)
-  filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
-end
-
 
 if $0 == __FILE__
   exit Alt.new.main
