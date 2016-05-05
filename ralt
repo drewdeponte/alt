@@ -46,7 +46,11 @@ class Alt
       possible_alternate_paths = get_possible_files_from_glob
     end
 
-    possible_alternate_paths.each do |poss_alt_path|
+    filename = get_filename_minus_extension(@path)
+    filename = strip_test_words(filename) if @path.test_file?
+    filtered_possible_alternate_paths = possible_alternate_paths.select { |p| p.include?(filename) }
+
+    filtered_possible_alternate_paths.each do |poss_alt_path|
       if @path.test_file?
         if Path.new(poss_alt_path).test_file?
           skipped_things = skipped_things + 1
@@ -178,6 +182,14 @@ class Path < String
   def cleanse_path
     self.gsub!(/^\.\//, '')
   end
+end
+
+def get_filename_minus_extension(path)
+  File.basename(path, ".*") # filename without extension
+end
+
+def strip_test_words(filename)
+  filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
 end
 
 if $0 == __FILE__
