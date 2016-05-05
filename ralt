@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# vim: set ft=ruby:
+
+# This file executes as a bash script, which turns around and executes Ruby via
+# the line below. The -x argument to Ruby makes it discard everything before
+# the second "!ruby" shebang. This allows us to work on Linux, where the
+# shebang can only have one argument so we can't directly say
+# "#!/usr/bin/env ruby --disable-gems". Thanks for that, Linux.
+#
+# If this seems confusing, don't worry. You can treat it as a normal Ruby file
+# starting with the "!ruby" shebang below.
+
+exec /usr/bin/env ruby --disable-gems -x "$0" $*
+#!ruby
+
+if RUBY_VERSION < '1.9.3'
+  abort 'error: Alt requires Ruby 1.9.3 or higher'
+end
+
+require 'optparse'
+require 'benchmark'
+
+class Alt
+  VERSION='0.0.1'
+
+  def initialize(argv: ARGV)
+    @argv = argv
+    @path = nil
+    @options = { version: false, stdin: false, debug: false }
+    parse_options
+    parse_args
+  end
+
+  def main
+    display_version and exit 0 if @options[:version]
+
+    highest_score = 0
+    highest_scored_poss_alt_path = nil
+
+    skipped_things = 0
+
+    possible_alternate_paths = []
+    if @options[:stdin]
+      possible_alternate_paths = get_possible_files_from_stdin
+    else
+      possible_alternate_paths = get_possible_files_from_glob
+    end
+
+    possible_alternate_paths.each do |poss_alt_path|
+      if @path.test_file?
+        if Path.new(poss_alt_path).test_file?
+          skipped_things = skipped_things + 1
+          next
+        end
+      else
+        if !Path.new(poss_alt_path).test_file?
+          skipped_things = skipped_things + 1
+          next
+        end
+      end
+
+      score = Judge.score(poss_alt_path, @path)
+      if score > highest_score
+        highest_score = score
+        highest_scored_poss_alt_path = poss_alt_path
+      end
+
+      debug "#{score}: #{@path} - #{poss_alt_path}"
+    end
+
+    debug "path to find alternate for: #{@path}"
+    debug "# possible alternate paths: #{possible_alternate_paths.count}"
+    debug "highest_score: #{highest_score}"
+    debug "highest_scored_poss_alt_path: #{highest_scored_poss_alt_path}"
+    debug "skipped_things: #{skipped_things}"
+
+    if highest_scored_poss_alt_path
+      $stdout.write(highest_scored_poss_alt_path)
+    else
+      $stdout.write('')
+    end
+
+    return 0
+  end
+
+  private
+
+  def debug(description)
+    if @options[:debug]
+      puts description
+    end
+  end
+
+  def parse_options
+    OptionParser.new do |opts|
+      opts.banner = "Usage: alt [options] <path>"
+
+      opts.on('-v', '--version', 'Display version') do
+        @options[:version] = true
+      end
+
+      opts.on('-d', '--debug', 'Debug mode') do
+        @options[:debug] = true
+      end
+
+      opts.on('--', '--', 'Use stdin as possible files') do
+        @options[:stdin] = true
+      end
+    end.parse!
+  end
+
+  def parse_args
+    @path = Path.new(@argv[0]) if @argv.length > 0
+  end
+
+  def display_version
+    $stdout.write("act v#{Alt::VERSION}\n") 
+  end
+
+  def get_possible_files_from_stdin
+    $stdin.readlines
+  end
+
+  def get_possible_files_from_glob
+    Dir.glob("**/*").reject { |p| File.directory?(p) }
+  end
+end
+
+class Judge
+  def self.score(query, str)
+    longest_match = find_longest_common_substring(query, str)
+    # longest_match = "aueaeoua"
+    return (longest_match.length.to_f/str.length.to_f) * (longest_match.length.to_f/query.length.to_f)
+  end
+
+  private
+
+  def self.find_longest_common_substring(s1, s2)
+    if (s1 == "" || s2 == "")
+      return ""
+    end
+    m = Array.new(s1.length){ [0] * s2.length }
+    longest_length, longest_end_pos = 0,0
+    (0 .. s1.length - 1).each do |x|
+      (0 .. s2.length - 1).each do |y|
+        if s1[x] == s2[y]
+          m[x][y] = 1
+          if (x > 0 && y > 0)
+            m[x][y] += m[x-1][y-1]
+          end
+          if m[x][y] > longest_length
+            longest_length = m[x][y]
+            longest_end_pos = x
+          end
+        end
+      end
+    end
+    return s1[longest_end_pos - longest_length + 1 .. longest_end_pos]
+  end
+end
+
+class Path < String
+  def intialize(path)
+    super(path.dup)
+    cleanse_path
+  end
+
+  def test_file?
+    self.start_with?('features/','test/', 'spec/')
+  end
+
+  def directory?
+    File.directory?(self)
+  end
+
+  private
+
+  def cleanse_path
+    self.gsub!(/^\.\//, '')
+  end
+end
+
+if $0 == __FILE__
+  exit Alt.new.main
+end
