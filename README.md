@@ -23,6 +23,9 @@ app/queues/fee/user_fee_submission.rb
 
 ![Demo](https://raw.github.com/cyphactor/alt/master/resources/demo.gif)
 
+For advanced usage, full reference of the command line interface, and frequently
+asked questions please refer to the [Wiki](https://github.com/cyphactor/alt/wiki).
+
 ## Installation
 
 To install `alt` simply copy the `alt` file from this repository into your
