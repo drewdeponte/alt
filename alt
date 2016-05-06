@@ -140,8 +140,13 @@ end
 
 class Judge
   def self.score(query, str)
+    # TODO: Improve performance. At the moment the find_longest_common_substring
+    # method is the most costly operation in this app. This leaves us with a few
+    # levers to move in terms of improving performance. Specifically, we could
+    # find a more performant algorithm, or find a way to reduce the number of
+    # times it has to be called, or use threading to do a scatter and gather
+    # approach.
     longest_match = find_longest_common_substring(query, str)
-    # longest_match = "aueaeoua"
     return (longest_match.length.to_f/str.length.to_f) * (longest_match.length.to_f/query.length.to_f)
   end
 
