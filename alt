@@ -134,7 +134,7 @@ class Alt
   end
 
   def strip_test_words(filename)
-    filename.gsub(/(_spec|_test|_steps)(\.rb)?$/, '')
+    filename.gsub(/(_spec|_test|_steps)(\.rb|\.exs|\.ex|\.js)?$/, '')
   end
 end
 
