@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: ability to source possible alternates from STDIN
+* `Changed`: the overall algorithm to simplify it now that have new scoring
+* `Changed`: Scoring equation to take rank of secondary string into account
 * `Changed`: debug output to understand matches to be more valuable
 * `Fixed`: bug where path cleansing was incorrectly skewing scores
 
