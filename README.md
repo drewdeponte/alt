@@ -33,7 +33,7 @@ To install `alt` simply copy the `alt` file from this repository into your
 There's no vim plugin. It may not end up needing one; we'll see. For now, you
 can just stick the code below in your `.vimrc` to invoke `alt` with `<leader>.`.
 **Note** that `alt` and the Vim Script example below **work** in both the
-terminal based Vim and GUI based Vim like MacVim 
+terminal based Vim and GUI based Vim like MacVim.
 
 ```vimscript
 " Run a given vim command on the results of alt from a given path.
