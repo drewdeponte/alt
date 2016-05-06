@@ -153,6 +153,20 @@ class Judge
   private
 
   def self.find_longest_common_substring(s1, s2)
+    # Currently this is implemented using a dynamic programming solution similar
+    # to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
+    # where N is the length of one string and M is the length of the other
+    # string.
+    #
+    # Another option would of course be to explore using something like a
+    # suffix tree to solve this problem, something like, the following.
+    # http://www.geeksforgeeks.org/suffix-tree-application-5-longest-common-substring-2/
+    # This is O(M+N) to build a Generalized Suffix Tree and O(M+N) to find the
+    # the longest common substring via depth first search.
+    #
+    # Beyond that we would have to explore not caring about longest substring
+    # and moving to a similarity ranking algorithm that maybe cares about
+    # subsequences rather that substrings, etc.
     if (s1 == "" || s2 == "")
       return ""
     end
