@@ -37,8 +37,7 @@ class Alt
     highest_score = 0
     highest_scored_poss_alt_path = nil
 
-    skipped_things = 0
-
+    # Get list of possible file paths for alternates
     possible_alternate_paths = []
     if @options[:stdin]
       possible_alternate_paths = get_possible_files_from_stdin
@@ -46,23 +45,24 @@ class Alt
       possible_alternate_paths = get_possible_files_from_glob
     end
 
+    # Filter list of possible file paths for alternates down so that scoring has
+    # to happen on as few items as possible because scoring is expensive due to
+    # the find the longest common substring dependendency. Note: This may be
+    # able to be improved as I used a naieve implementation of longest common
+    # substring. But, we should still reduce the work if we can.
     filename = get_filename_minus_extension(@path)
-    filename = strip_test_words(filename) if @path.test_file?
-    filtered_possible_alternate_paths = possible_alternate_paths.select { |p| p.include?(filename) }
+    filtered_possible_alternate_paths = []
+    if @path.test_file?
+      filename = strip_test_words(filename)
+      filtered_possible_alternate_paths = possible_alternate_paths.select { |p| p.include?(filename) && !p.test_file? }
+    else
+      filtered_possible_alternate_paths = possible_alternate_paths.select { |p| p.include?(filename) && p.test_file? }
+    end
 
+    # Score all the filtered possible alternates keeping track of the highest
+    # scored one as that should be our alternate, or as close as we can get to
+    # our alternate.
     filtered_possible_alternate_paths.each do |poss_alt_path|
-      if @path.test_file?
-        if Path.new(poss_alt_path).test_file?
-          skipped_things = skipped_things + 1
-          next
-        end
-      else
-        if !Path.new(poss_alt_path).test_file?
-          skipped_things = skipped_things + 1
-          next
-        end
-      end
-
       score = Judge.score(poss_alt_path, @path)
       if score > highest_score
         highest_score = score
@@ -74,8 +74,7 @@ class Alt
 
     debug "path to find alternate for: #{@path}"
     debug "# possible alternate paths: #{possible_alternate_paths.count}"
-    debug "# skipped_things: #{skipped_things}"
-    debug "# processed: #{possible_alternate_paths.count - skipped_things}"
+    debug "# filtered possible alternate paths: #{filtered_possible_alternate_paths.count}"
     debug "highest_score: #{highest_score}"
     debug "highest_scored_poss_alt_path: #{highest_scored_poss_alt_path}"
 
@@ -123,11 +122,11 @@ class Alt
   end
 
   def get_possible_files_from_stdin
-    $stdin.readlines
+    $stdin.readlines.map { |p| Path.new(p) }
   end
 
   def get_possible_files_from_glob
-    Dir.glob("**/*").reject { |p| File.directory?(p) }
+    Dir.glob("**/*").reject { |p| File.directory?(p) }.map { |p| Path.new(p) }
   end
 
   def get_filename_minus_extension(path)
@@ -173,9 +172,8 @@ class Judge
 end
 
 class Path < String
-  def intialize(path)
-    super(path.dup)
-    cleanse_path
+  def initialize(path)
+    super(cleanse_path(path))
   end
 
   def test_file?
@@ -188,8 +186,8 @@ class Path < String
 
   private
 
-  def cleanse_path
-    self.gsub!(/^\.\//, '')
+  def cleanse_path(str)
+    str.strip.gsub(/^\.\//, '')
   end
 end
 
