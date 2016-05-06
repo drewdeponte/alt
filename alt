@@ -27,12 +27,12 @@ class Alt
     @argv = argv
     @path = nil
     @options = { version: false, stdin: false, debug: false }
-    parse_options
+    parse_options(@argv)
     parse_args
   end
 
   def main
-    display_version and exit 0 if @options[:version]
+    display_version and return 0 if @options[:version]
 
     highest_score = 0
     highest_scored_poss_alt_path = nil
@@ -95,7 +95,7 @@ class Alt
     end
   end
 
-  def parse_options
+  def parse_options(argv)
     OptionParser.new do |opts|
       opts.banner = "Usage: alt [options] <path>"
 
@@ -110,7 +110,7 @@ class Alt
       opts.on('--', '--', 'Use stdin as possible files') do
         @options[:stdin] = true
       end
-    end.parse!
+    end.parse!(argv)
   end
 
   def parse_args
@@ -118,8 +118,10 @@ class Alt
   end
 
   def display_version
-    $stdout.write("act v#{Alt::VERSION}\n") 
+    $stdout.write("alt v#{Alt::VERSION}\n")
   end
+
+  private
 
   def get_possible_files_from_stdin
     $stdin.readlines.map { |p| Path.new(p) }
