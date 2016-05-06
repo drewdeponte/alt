@@ -8,7 +8,7 @@ RSpec.describe Judge do
       query = 'spec/foo/bar/car_spec.rb'
       potential_match = 'foo/bar/zar.rb'
       score = subject.score(query, potential_match)
-      expect(score).to be_within(0.0001).of(0.5714)
+      expect(score).to be_within(0.0001).of(0.19047)
     end
 
     it 'finds the longest common substring' do
@@ -24,7 +24,7 @@ RSpec.describe Judge do
       potential_match = 'foo/bar/zar.rb'
       allow(subject).to receive(:find_longest_common_substring)
         .and_return('foo')
-      expect(subject.score(query, potential_match)).to be_within(0.0001).of(3.0/14.0)
+      expect(subject.score(query, potential_match)).to be_within(0.0001).of((3.0/14.0) * (3.0/24.0))
     end
   end
 
