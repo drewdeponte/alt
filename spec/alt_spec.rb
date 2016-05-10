@@ -8,6 +8,20 @@ RSpec.describe Alt do
     end
   end
 
+  context 'when given a python test file' do
+    it 'finds the alternate if in the possible set' do
+      output = `cat spec/fixtures/python_possibles.txt | ./alt -- test/test_toaster.py`
+      expect(output).to eq('toaster.py')
+    end
+  end
+
+  context 'when given a python implementation file' do
+    it 'finds the alternate if in the possible set' do
+      output = `cat spec/fixtures/python_possibles.txt | ./alt -- toaster.py`
+      expect(output).to eq('test/test_toaster.py')
+    end
+  end
+
   context 'when given the -v option' do
     it 'displays the version' do
       output = `./alt -v`
