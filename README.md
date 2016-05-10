@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cyphactor/alt.svg?branch=master)](https://travis-ci.org/cyphactor/alt)
+
 # Alt
 
 `alt` is a command line utility that attempts to find the "alternate path" for
