@@ -198,7 +198,7 @@ class Path < String
   end
 
   def test_file?
-    self.start_with?('features/','test/', 'spec/')
+    self.start_with?('features/','test/', 'spec/', 'tests/')
   end
 
   def directory?

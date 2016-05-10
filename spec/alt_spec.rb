@@ -10,15 +10,15 @@ RSpec.describe Alt do
 
   context 'when given a python test file' do
     it 'finds the alternate if in the possible set' do
-      output = `cat spec/fixtures/python_possibles.txt | ./alt -- test/test_toaster.py`
-      expect(output).to eq('toaster.py')
+      output = `cat spec/fixtures/python_dingus_possibles.txt | ./alt -- tests/test_dingus.py`
+      expect(output).to eq('dingus.py')
     end
   end
 
   context 'when given a python implementation file' do
     it 'finds the alternate if in the possible set' do
-      output = `cat spec/fixtures/python_possibles.txt | ./alt -- toaster.py`
-      expect(output).to eq('test/test_toaster.py')
+      output = `cat spec/fixtures/python_dingus_possibles.txt | ./alt -- dingus.py`
+      expect(output).to eq('tests/test_dingus.py')
     end
   end
 
