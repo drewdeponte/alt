@@ -23,7 +23,7 @@ require 'benchmark'
 class Alt
   VERSION='0.0.1'
 
-  def initialize(argv: ARGV)
+  def initialize(argv = ARGV)
     @argv = argv
     @path = nil
     @options = { version: false, stdin: false, debug: false }
