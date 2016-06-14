@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v1.0.0][v1.0.0] - 2016-06-14
+
+* `Fixed`: bug with alternating between rake task files and tests
 * `Added`: ability to source possible alternates from STDIN
 * `Changed`: the overall algorithm to simplify it now that have new scoring
 * `Changed`: Scoring equation to take rank of secondary string into account
@@ -20,5 +23,7 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/cyphactor/alt/compare/v0.0.1...HEAD
+[unreleased]: https://github.com/cyphactor/alt/compare/v1.0.0...HEAD
 [v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
+[v1.0.0]: https://github.com/cyphactor/alt/compare/v0.0.1...v1.0.0
+
