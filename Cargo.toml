@@ -5,3 +5,5 @@ version = "0.0.1"
 authors = [ "Andrew De Ponte <cyphactor@gmail.com>" ]
 
 [dependencies]
+
+argparse = "*"
