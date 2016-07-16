@@ -7,3 +7,4 @@ authors = [ "Andrew De Ponte <cyphactor@gmail.com>" ]
 [dependencies]
 
 argparse = "*"
+glob = "0.2.11"
