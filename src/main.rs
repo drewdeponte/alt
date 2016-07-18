@@ -87,17 +87,19 @@ fn main() {
                 if is_test_file(&cleansed_path) {
                     let filename = strip_test_words(&filename);
                     let reduced_paths = paths.iter()
-                        .filter(|path| path.to_str().unwrap().contains(filename.as_str()))
-                        .filter(|path| !is_test_file(&path.to_str().unwrap().to_string()));
+                        .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
+                        .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
+                        .filter(|path| !is_test_file(&path)); // filter to paths that aren't test files
                     for path in reduced_paths {
-                        println!("{:?}", path.display());
+                        println!("{:?}", path);
                     }
                 } else {
                     let reduced_paths = paths.iter()
-                        .filter(|path| path.to_str().unwrap().contains(filename.as_str()))
-                        .filter(|path| is_test_file(&path.to_str().unwrap().to_string()));
+                        .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
+                        .filter(|path| path.contains(filename.as_str())) // filter to paths that contain the filename
+                        .filter(|path| is_test_file(&path)); // filter to paths that ARE test files
                     for path in reduced_paths {
-                        println!("{:?}", path.display());
+                        println!("{:?}", path);
                     }
                 }
             },
