@@ -6,5 +6,6 @@ authors = [ "Andrew De Ponte <cyphactor@gmail.com>" ]
 
 [dependencies]
 
-argparse = "*"
+argparse = "0.2.1"
 glob = "0.2.11"
+regex = "0.1.73"

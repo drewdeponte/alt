@@ -1,9 +1,11 @@
 extern crate argparse;
 extern crate glob;
+extern crate regex;
 
 use argparse::{ArgumentParser, StoreTrue, Store, StoreOption, Print};
 use std::io::BufRead;
 use glob::glob;
+use regex::Regex;
 
 fn identity<T>(x: T) -> T {x}
 
@@ -16,6 +18,25 @@ struct Options {
 fn get_possible_files_from_glob() -> Result<Vec<std::path::PathBuf>, glob::PatternError> {
     // Dir.glob("**/*").reject { |p| File.directory?(p) }.map { |p| Path.new(p) }
     return glob("**/*").map(|paths| paths.flat_map(identity).filter(|path| path.is_file()).collect())
+}
+
+fn get_filename_minus_extension(path_str: &String) -> String {
+    std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap().to_string()
+}
+
+fn is_test_file(path: &String) -> bool {
+    let re = Regex::new(r"^(features/|test/|spec/|tests/)").unwrap();
+    re.is_match(path.as_str())
+}
+
+fn strip_test_words(filename: &String) -> String {
+    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_test|_steps)?(\.rb|\.exs|\.ex|\.js|\.py)?$").unwrap();
+    re.replace_all(filename.as_str(), "$p")
+}
+
+fn cleanse_path(path: &String) -> String {
+    let re = Regex::new(r"^(\./|\r|\n| )").unwrap();
+    re.replace_all(path.as_str(), "")
 }
 
 fn main() {
@@ -34,6 +55,7 @@ fn main() {
         ap.parse_args_or_exit();
     }
 
+    println!("debug: {}", options.debug);
     println!("required path: {}", options.path);
 
     if let Some(unwrapped_file) = options.file {
@@ -49,13 +71,38 @@ fn main() {
     } else {
         match get_possible_files_from_glob() {
             Ok(paths) => {
-                for path in paths.iter() {
-                    println!("{:?}", path.display());
+                // - get collection of possible alternate file paths
+                // - cleanse possible paths (stripping prefixed ./ and postfixed \r,\n,sp)
+                // - if path is test file
+                //      - reduce set to paths that match filename stripped of test words and extensions
+                //      - reduce set to non-test files
+                //   else
+                //      - reduce set to paths that match filename stripped of test words and extensions
+                //      - reduce set to test files
+                // - score the reduced set of possible paths, tracking the highest score
+                // - return the path with the highest score
+
+                let cleansed_path = cleanse_path(&options.path);
+                let filename = get_filename_minus_extension(&options.path);
+                if is_test_file(&cleansed_path) {
+                    let filename = strip_test_words(&filename);
+                    let reduced_paths = paths.iter()
+                        .filter(|path| path.to_str().unwrap().contains(filename.as_str()))
+                        .filter(|path| !is_test_file(&path.to_str().unwrap().to_string()));
+                    for path in reduced_paths {
+                        println!("{:?}", path.display());
+                    }
+                } else {
+                    let reduced_paths = paths.iter()
+                        .filter(|path| path.to_str().unwrap().contains(filename.as_str()))
+                        .filter(|path| is_test_file(&path.to_str().unwrap().to_string()));
+                    for path in reduced_paths {
+                        println!("{:?}", path.display());
+                    }
                 }
             },
             Err(e) => println!("{:?}", e)
         }
     }
 
-    println!("debug: {}", options.debug);
 }
