@@ -86,7 +86,7 @@ fn find_longest_common_substring(s1: &String, s2: &String) -> String {
     }
 
     let start: usize = longest_end_pos as usize - longest_length as usize + 1;
-    let end: usize = longest_end_pos as usize;
+    let end: usize = longest_end_pos;
     s1[start..end].to_string()
 }
 
@@ -123,15 +123,45 @@ fn main() {
     //println!("debug: {}", options.debug);
     //println!("required path: {}", options.path);
     let cleansed_path = cleanse_path(&options.path);
+    let mut filename = get_filename_minus_extension(&options.path);
+    if is_test_file(&cleansed_path) {
+        filename = strip_test_words(&filename);
+    }
 
     if let Some(unwrapped_file) = options.file {
-        println!("file: {}", unwrapped_file);
         if unwrapped_file == "-" {
+            println!("DREW: HERE");
             let stdin = std::io::stdin();
-            for line in stdin.lock().lines() {
-              println!("{}", line.unwrap());
+            //for line in stdin.lock().lines() {
+            //  println!("{}", line.unwrap());
+            //}
+            if is_test_file(&cleansed_path) {
+                let reduced_paths = stdin.lock().lines()
+                .map(|path| cleanse_path(&path.unwrap()))
+                .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
+                .filter(|path| !is_test_file(&path)); // filter to paths that aren't test files
+                for path in reduced_paths {
+                    let s = score(&path, &cleansed_path);
+                    if s > highest_score {
+                        highest_score = s;
+                        best_match = path;
+                    }
+                }
+            } else {
+                let reduced_paths = stdin.lock().lines()
+                .map(|path| cleanse_path(&path.unwrap()))
+                .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
+                .filter(|path| is_test_file(&path)); // filter to paths that aren't test files
+                for path in reduced_paths {
+                    let s = score(&path, &cleansed_path);
+                    if s > highest_score {
+                        highest_score = s;
+                        best_match = path;
+                    }
+                }
             }
         } else {
+            println!("DON'T CURRENTLY SUPPORT SPECFIED FILES");
             // figure out how to open specified file and read in as content
         }
     } else {
@@ -148,9 +178,7 @@ fn main() {
                 // - score the reduced set of possible paths, tracking the highest score
                 // - return the path with the highest score
 
-                let filename = get_filename_minus_extension(&options.path);
                 if is_test_file(&cleansed_path) {
-                    let filename = strip_test_words(&filename);
                     let reduced_paths = paths.iter()
                         .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
                         .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
@@ -178,7 +206,6 @@ fn main() {
             },
             Err(e) => println!("{:?}", e)
         }
-        print!("{}", best_match);
     }
-
+    print!("{}", best_match);
 }
