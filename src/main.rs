@@ -34,9 +34,13 @@ fn strip_test_words(filename: &String) -> String {
     re.replace_all(filename.as_str(), "$p")
 }
 
-fn cleanse_path(path: &String) -> String {
-    let re = Regex::new(r"^(\./|\r|\n| )").unwrap();
-    re.replace_all(path.as_str(), "")
+fn cleanse_path(path: &str) -> String {
+    let s = path.to_string();
+    if s[0..2].to_string() == "./" {
+        s[2..].to_string()
+    } else {
+        s
+    }
 }
 
 fn find_longest_common_substring(s1: &String, s2: &String) -> String {
@@ -132,9 +136,6 @@ fn main() {
         if unwrapped_file == "-" {
             println!("DREW: HERE");
             let stdin = std::io::stdin();
-            //for line in stdin.lock().lines() {
-            //  println!("{}", line.unwrap());
-            //}
             if is_test_file(&cleansed_path) {
                 let reduced_paths = stdin.lock().lines()
                 .map(|path| cleanse_path(&path.unwrap()))
@@ -167,17 +168,6 @@ fn main() {
     } else {
         match get_possible_files_from_glob() {
             Ok(paths) => {
-                // - get collection of possible alternate file paths
-                // - cleanse possible paths (stripping prefixed ./ and postfixed \r,\n,sp)
-                // - if path is test file
-                //      - reduce set to paths that match filename stripped of test words and extensions
-                //      - reduce set to non-test files
-                //   else
-                //      - reduce set to paths that match filename stripped of test words and extensions
-                //      - reduce set to test files
-                // - score the reduced set of possible paths, tracking the highest score
-                // - return the path with the highest score
-
                 if is_test_file(&cleansed_path) {
                     let reduced_paths = paths.iter()
                         .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
