@@ -2,7 +2,7 @@ require 'benchmark'
 
 repeat = 1_000
 
-puts "\nRuby Implementation"
+puts "\nRuby Classic Implementation"
 
 Benchmark.bm(15) do |x|
   x.report('For impl. file:') do
@@ -14,7 +14,19 @@ Benchmark.bm(15) do |x|
   end
 end
 
-puts "\nRust Implementation"
+puts "\nRuby Scatter Gather Implementation"
+
+Benchmark.bm(15) do |x|
+  x.report('For impl. file:') do
+    repeat.times { `cat spec/fixtures/aa_zz_possibles.txt | ./alt_sg -- lib/rubyfile_qq.rb` }
+  end
+
+  x.report('For test file:') do
+    repeat.times { `cat spec/fixtures/aa_zz_possibles.txt | ./alt_sg -- spec/lib/rubyfile_qr_spec.rb` }
+  end
+end
+
+puts "\nRust Classic Implementation"
 
 Benchmark.bm(15) do |x|
   x.report('For impl. file:') do
