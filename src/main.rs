@@ -178,7 +178,7 @@ fn main() {
             },
             Err(e) => println!("{:?}", e)
         }
-        println!("{}", best_match);
+        print!("{}", best_match);
     }
 
 }
