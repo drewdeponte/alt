@@ -2,7 +2,7 @@ extern crate argparse;
 extern crate glob;
 extern crate regex;
 
-use argparse::{ArgumentParser, StoreTrue, Store, StoreOption, Print};
+use argparse::{ArgumentParser, Store, StoreOption, Print};
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
