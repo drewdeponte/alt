@@ -3,14 +3,23 @@ extern crate glob;
 extern crate regex;
 
 use argparse::{ArgumentParser, StoreTrue, Store, StoreOption, Print};
+use std::io::BufReader;
 use std::io::BufRead;
+use std::fs::File;
+use std::io::Write;
 use glob::glob;
 use regex::Regex;
 
 fn identity<T>(x: T) -> T {x}
 
+macro_rules! printerr(
+    ($($arg:tt)*) => { {
+        let r = writeln!(&mut ::std::io::stderr(), $($arg)*);
+        r.expect("failed printing to stderr");
+    } }
+);
+
 struct Options {
-    debug: bool,
     path: String,
     file: Option<String>
 }
@@ -90,12 +99,6 @@ fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
 }
 
 fn score(s1: &String, s2: &String) -> f32 {
-    // TODO: Improve performance. At the moment the find_longest_common_substring
-    // method is the most costly operation in this app. This leaves us with a few
-    // levers to move in terms of improving performance. Specifically, we could
-    // find a more performant algorithm, or find a way to reduce the number of
-    // times it has to be called, or use threading to do a scatter and gather
-    // approach.
     let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
     (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
@@ -119,7 +122,6 @@ fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_
 
 fn main() {
     let mut options = Options {
-        debug: false,
         path: "".to_string(),
         file: None
     };
@@ -127,14 +129,11 @@ fn main() {
     { // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
         ap.add_option(&["-v", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "show version");
-        ap.refer(&mut options.debug).add_option(&["-d", "--debug"], StoreTrue, "enable debug output");
         ap.refer(&mut options.file).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
         ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
         ap.parse_args_or_exit();
     }
 
-    //println!("debug: {}", options.debug);
-    //println!("required path: {}", options.path);
     let cleansed_path = cleanse_path(&options.path);
     let mut filename = get_filename_minus_extension(&options.path);
     if is_test_file(&cleansed_path) {
@@ -147,9 +146,16 @@ fn main() {
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
             find_alt(&filename, &cleansed_path, paths, is_test_file(&cleansed_path))
         } else {
-            println!("DON'T CURRENTLY SUPPORT SPECIFIED FILES");
-            "".to_string()
-            // figure out how to open specified file and read in as content
+            let f = match File::open(&unwrapped_file) {
+                Ok(file) => file,
+                Err(e) => {
+                    printerr!("Failure occurred opening file {}, {}", &unwrapped_file, e);
+                    std::process::exit(1)
+                }
+            };
+            let file = BufReader::new(&f);
+            let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
+            find_alt(&filename, &cleansed_path, paths, is_test_file(&cleansed_path))
         }
     } else {
         match get_possible_files_from_glob() {
@@ -158,8 +164,8 @@ fn main() {
                 find_alt(&filename, &cleansed_path, unwrapped_paths, is_test_file(&cleansed_path))
             },
             Err(e) => {
-                println!("{:?}", e);
-                "".to_string()
+                printerr!("Error reading paths {}", e);
+                std::process::exit(1)
             }
         }
     };
