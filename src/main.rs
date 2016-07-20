@@ -43,7 +43,7 @@ fn cleanse_path(path: &str) -> String {
     }
 }
 
-fn find_longest_common_substring(s1: &String, s2: &String) -> String {
+fn find_longest_common_substring_length(s1: &String, s2: &String) -> usize {
     // Currently this is implemented using a dynamic programming solution similar
     // to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
     // where N is the length of one string and M is the length of the other
@@ -59,15 +59,12 @@ fn find_longest_common_substring(s1: &String, s2: &String) -> String {
     // and moving to a similarity ranking algorithm that maybe cares about
     // subsequences rather that substrings, etc.
     if s1.is_empty() || s2.is_empty() {
-        return "".to_string()
+        return 0
     }
 
-    let mut m: Vec<Vec<i32>> = Vec::new();
+    let mut m: Vec<Vec<i32>> = Vec::with_capacity(s1.len());
     for x in 0..s1.len() {
-        let mut v: Vec<i32> = Vec::new();
-        for y in 0..s2.len() {
-            v.push(0);
-        }
+        let mut v: Vec<i32> = vec![0, s2.len() as i32];
         m.push(v);
     }
 
@@ -91,7 +88,7 @@ fn find_longest_common_substring(s1: &String, s2: &String) -> String {
 
     let start: usize = longest_end_pos as usize - longest_length as usize + 1;
     let end: usize = longest_end_pos;
-    s1[start..end].to_string()
+    end - start
 }
 
 fn score(s1: &String, s2: &String) -> f32 {
@@ -101,8 +98,8 @@ fn score(s1: &String, s2: &String) -> f32 {
     // find a more performant algorithm, or find a way to reduce the number of
     // times it has to be called, or use threading to do a scatter and gather
     // approach.
-    let longest_match = find_longest_common_substring(s1, s2);
-    (longest_match.len() as f32/s2.len() as f32) * (longest_match.len() as f32/s1.len() as f32)
+    let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
+    (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
 
 fn main() {
