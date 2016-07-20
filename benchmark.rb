@@ -1,6 +1,7 @@
 require 'benchmark'
 
 repeat = 1_000
+# repeat = 1
 
 puts "\nRuby Classic Implementation"
 

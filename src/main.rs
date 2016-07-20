@@ -16,7 +16,6 @@ struct Options {
 }
 
 fn get_possible_files_from_glob() -> Result<Vec<std::path::PathBuf>, glob::PatternError> {
-    // Dir.glob("**/*").reject { |p| File.directory?(p) }.map { |p| Path.new(p) }
     glob("**/*").map(|paths| paths.flat_map(identity).filter(|path| path.is_file()).collect())
 }
 
@@ -43,7 +42,7 @@ fn cleanse_path(path: &str) -> String {
     }
 }
 
-fn find_longest_common_substring_length(s1: &String, s2: &String) -> usize {
+fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
     // Currently this is implemented using a dynamic programming solution similar
     // to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
     // where N is the length of one string and M is the length of the other
@@ -63,32 +62,31 @@ fn find_longest_common_substring_length(s1: &String, s2: &String) -> usize {
     }
 
     let mut m: Vec<Vec<i32>> = Vec::with_capacity(s1.len());
-    for x in 0..s1.len() {
-        let mut v: Vec<i32> = vec![0, s2.len() as i32];
+    for _ in 0..s1.len() {
+        let v: Vec<i32> = vec![0; s2.len()];
         m.push(v);
     }
 
     let mut longest_length = 0;
-    let mut longest_end_pos = 0;
+
+    let s1_bytes = s1.as_bytes();
+    let s2_bytes = s2.as_bytes();
 
     for i in 0..s1.len() {
         for j in 0..s2.len() {
-            if s1.as_bytes()[i] == s2.as_bytes()[j] {
+            if s1_bytes[i] == s2_bytes[j] {
                 m[i][j] = 1;
                 if i > 0 && j > 0 {
                     m[i][j] += m[i-1][j-1];
                 }
                 if m[i][j] > longest_length {
                     longest_length = m[i][j];
-                    longest_end_pos = i;
                 }
             }
         }
     }
 
-    let start: usize = longest_end_pos as usize - longest_length as usize + 1;
-    let end: usize = longest_end_pos;
-    end - start
+    longest_length
 }
 
 fn score(s1: &String, s2: &String) -> f32 {
@@ -102,15 +100,29 @@ fn score(s1: &String, s2: &String) -> f32 {
     (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
 
+fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_file: bool) -> String {
+    let (_, alternate) = paths.iter()
+        .map(|path| cleanse_path(&path))
+        .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
+        .filter(|path| is_test_file(&path) != test_file)
+        .fold((0 as f32, "".to_string()), |result, path| {
+            let (highest_score, best_match) = result;
+            let s = score(&path, &cleansed_path);
+            if s > highest_score {
+                (s, path)
+            } else {
+                (highest_score, best_match)
+            }
+        });
+    alternate
+}
+
 fn main() {
     let mut options = Options {
         debug: false,
         path: "".to_string(),
         file: None
     };
-
-    let mut highest_score: f32 = 0.0;
-    let mut best_match: String = "".to_string();
 
     { // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
@@ -129,70 +141,27 @@ fn main() {
         filename = strip_test_words(&filename);
     }
 
-    if let Some(unwrapped_file) = options.file {
+    let best_match = if let Some(unwrapped_file) = options.file {
         if unwrapped_file == "-" {
-            println!("DREW: HERE");
             let stdin = std::io::stdin();
-            if is_test_file(&cleansed_path) {
-                let reduced_paths = stdin.lock().lines()
-                .map(|path| cleanse_path(&path.unwrap()))
-                .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
-                .filter(|path| !is_test_file(&path)); // filter to paths that aren't test files
-                for path in reduced_paths {
-                    let s = score(&path, &cleansed_path);
-                    if s > highest_score {
-                        highest_score = s;
-                        best_match = path;
-                    }
-                }
-            } else {
-                let reduced_paths = stdin.lock().lines()
-                .map(|path| cleanse_path(&path.unwrap()))
-                .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
-                .filter(|path| is_test_file(&path)); // filter to paths that aren't test files
-                for path in reduced_paths {
-                    let s = score(&path, &cleansed_path);
-                    if s > highest_score {
-                        highest_score = s;
-                        best_match = path;
-                    }
-                }
-            }
+            let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
+            find_alt(&filename, &cleansed_path, paths, is_test_file(&cleansed_path))
         } else {
-            println!("DON'T CURRENTLY SUPPORT SPECFIED FILES");
+            println!("DON'T CURRENTLY SUPPORT SPECIFIED FILES");
+            "".to_string()
             // figure out how to open specified file and read in as content
         }
     } else {
         match get_possible_files_from_glob() {
             Ok(paths) => {
-                if is_test_file(&cleansed_path) {
-                    let reduced_paths = paths.iter()
-                        .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
-                        .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
-                        .filter(|path| !is_test_file(&path)); // filter to paths that aren't test files
-                    for path in reduced_paths {
-                        let s = score(&path, &cleansed_path);
-                        if s > highest_score {
-                            highest_score = s;
-                            best_match = path;
-                        }
-                    }
-                } else {
-                    let reduced_paths = paths.iter()
-                        .map(|path| cleanse_path(&path.to_str().unwrap().to_string()))
-                        .filter(|path| path.contains(filename.as_str())) // filter to paths that contain the filename
-                        .filter(|path| is_test_file(&path)); // filter to paths that ARE test files
-                    for path in reduced_paths {
-                        let s = score(&path, &cleansed_path);
-                        if s > highest_score {
-                            highest_score = s;
-                            best_match = path;
-                        }
-                    }
-                }
+                let unwrapped_paths:Vec<String> = paths.iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
+                find_alt(&filename, &cleansed_path, unwrapped_paths, is_test_file(&cleansed_path))
             },
-            Err(e) => println!("{:?}", e)
+            Err(e) => {
+                println!("{:?}", e);
+                "".to_string()
+            }
         }
-    }
+    };
     print!("{}", best_match);
 }
