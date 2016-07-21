@@ -1,8 +1,8 @@
 [package]
 
 name = "alt"
-version = "0.0.1"
-authors = [ "Andrew De Ponte <cyphactor@gmail.com>" ]
+version = "2.0.0"
+authors = [ "Andrew De Ponte <cyphactor@gmail.com>", "Brian Miller <brimil01@gmail.com>", "Russ Cloak <russcloak@gmail.com>" ]
 
 [dependencies]
 
