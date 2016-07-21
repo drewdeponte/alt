@@ -10,6 +10,13 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v2.0.0][v2.0.0] - 2016-07-21
+
+* `Changed`: the -- option switch to -f -
+* `Removed`: the --debug option switch
+* `Added`: complete rewrite in Rust
+* `Removed`: Ruby implementation
+
 #### [v1.0.0][v1.0.0] - 2016-06-14
 
 * `Fixed`: bug with alternating between rake task files and tests
@@ -23,7 +30,8 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/cyphactor/alt/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/cyphactor/alt/compare/v2.0.0...HEAD
 [v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
 [v1.0.0]: https://github.com/cyphactor/alt/compare/v0.0.1...v1.0.0
+[v2.0.0]: https://github.com/cyphactor/alt/compare/v1.0.0...v2.0.0
 
