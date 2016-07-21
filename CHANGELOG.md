@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v2.0.1][v2.0.1] - 2016-07-22
+
 * `Fixed`: bug causing crash when dealing with files named a single char
 * `Removed`: Ruby implementation from benchmarks
 
@@ -33,8 +35,9 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/cyphactor/alt/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/cyphactor/alt/compare/v2.0.1...HEAD
 [v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
 [v1.0.0]: https://github.com/cyphactor/alt/compare/v0.0.1...v1.0.0
 [v2.0.0]: https://github.com/cyphactor/alt/compare/v1.0.0...v2.0.0
+[v2.0.1]: https://github.com/cyphactor/alt/compare/v2.0.0...v2.0.1
 
