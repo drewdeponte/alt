@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Fixed`: bug causing crash when dealing with files named a single char
+* `Removed`: Ruby implementation from benchmarks
+
 #### [v2.0.0][v2.0.0] - 2016-07-21
 
 * `Changed`: the -- option switch to -f -
