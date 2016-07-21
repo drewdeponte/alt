@@ -1,0 +1,11 @@
+[package]
+
+name = "alt"
+version = "0.0.1"
+authors = [ "Andrew De Ponte <cyphactor@gmail.com>" ]
+
+[dependencies]
+
+argparse = "0.2.1"
+glob = "0.2.11"
+regex = "0.1.73"
