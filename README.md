@@ -4,8 +4,7 @@
 
 `alt` is a command line utility that attempts to find the "alternate path" for
 the provided path. This is primarily intended for developers. It is written in
-100% pure ruby, with zero dependencies. Hence, it is able to run on any machine
-that has a ruby interpreter installed. This is most machines now days.
+Rust. Hence, it is compiled and distributed as a binary.
 
 It was originally written to alternate files in vim, but has no dependency on
 vim at all and can be used in many other scenarios as it is just a command line
@@ -30,8 +29,9 @@ asked questions please refer to the [Wiki](https://github.com/cyphactor/alt/wiki
 
 ## Installation
 
-To install `alt` simply copy the `alt` file from this repository into your
-`~/bin` directory and make sure your `~/bin` directory is in your `PATH`.
+To install `alt` simply download the appropriate `alt` binary from the
+[releases](https://github.com/cyphactor/alt/releases), place it in a directory
+that is in your `PATH` and make it executable, `chmod u+x alt`.
 
 ## Use with Vim
 
@@ -44,7 +44,7 @@ terminal based Vim and GUI based Vim like MacVim.
 " Run a given vim command on the results of alt from a given path.
 " See usage below.
 function! AltCommand(path, vim_command)
-  let l:alternate = system("~/bin/alt " . a:path)
+  let l:alternate = system("alt " . a:path)
   if empty(l:alternate)
     echo "No alternate file for " . a:path . " exists!"
   else
