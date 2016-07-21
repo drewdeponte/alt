@@ -44,7 +44,7 @@ fn strip_test_words(filename: &String) -> String {
 
 fn cleanse_path(path: &str) -> String {
     let s = path.to_string();
-    if s[0..2].to_string() == "./" {
+    if s.len() > 1 && s[0..2].to_string() == "./" {
         s[2..].to_string()
     } else {
         s
