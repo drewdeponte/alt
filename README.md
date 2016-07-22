@@ -29,9 +29,23 @@ asked questions please refer to the [Wiki](https://github.com/cyphactor/alt/wiki
 
 ## Installation
 
-To install `alt` simply download the appropriate `alt` binary from the
-[releases](https://github.com/cyphactor/alt/releases), place it in a directory
-that is in your `PATH` and make it executable, `chmod u+x alt`.
+To install on Mac OS X or (MacOS) we provide a [Homebrew](http://brew.sh) tap
+which provides the alt formula. You can use it by doing the following:
+
+#### Add the Tap
+
+```
+brew tap "codebreakdown/homebrew-oss"
+```
+
+#### brew install
+
+```
+brew install codebreakdown/oss/alt
+```
+
+If you are on a platform other than Mac OS X or (MacOS) you will have to build
+your own version from source.
 
 ## Use with Vim
 
