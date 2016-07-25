@@ -47,6 +47,12 @@ brew install codebreakdown/oss/alt
 If you are on a platform other than Mac OS X or (MacOS) you will have to build
 your own version from source.
 
+### On Linux
+
+Simply download the Linux binary from the
+[releases](https://github.com/codebreakdown/alt/releases) page and drop
+it in your `PATH` and make sure it is executable with `chmod u+x alt`.
+
 ## Use with Vim
 
 There's no vim plugin. It may not end up needing one; we'll see. For now, you
