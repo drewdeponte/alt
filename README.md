@@ -35,13 +35,13 @@ which provides the alt formula. You can use it by doing the following:
 #### Add the Tap
 
 ```
-brew tap "codebreakdown/homebrew-oss"
+brew tap "uptech/homebrew-oss"
 ```
 
 #### brew install
 
 ```
-brew install codebreakdown/oss/alt
+brew install uptech/oss/alt
 ```
 
 If you are on a platform other than Mac OS X or (MacOS) you will have to build
@@ -50,7 +50,7 @@ your own version from source.
 ### On Linux
 
 Simply download the Linux binary from the
-[releases](https://github.com/codebreakdown/alt/releases) page and drop
+[releases](https://github.com/uptech/alt/releases) page and drop
 it in your `PATH` and make sure it is executable with `chmod u+x alt`.
 
 ## Use with Vim
