@@ -86,6 +86,14 @@ endfunction
 nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
 ```
 
+## Contributing
+
+If you interested at all in contributing. Please do. We are welcoming
+group and are willing to provide guidance whenever possible.
+
+Please see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for more details on
+contributing.
+
 ## License
 
 `alt` is Copyright © 2016 UpTech Works, LLC. It is free software, and
