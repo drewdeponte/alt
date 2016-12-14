@@ -30,7 +30,7 @@ asked questions please refer to the [Wiki](https://github.com/cyphactor/alt/wiki
 ## Installation
 
 To install on Mac OS X or (MacOS) we provide a [Homebrew](http://brew.sh) tap
-which provides the alt formula. You can use it by doing the following:
+which provides the `alt` formula. You can use it by doing the following:
 
 #### Add the Tap
 
@@ -47,11 +47,21 @@ brew install uptech/oss/alt
 If you are on a platform other than Mac OS X or (MacOS) you will have to build
 your own version from source.
 
-### On Linux
+### Build from Source
 
-Simply download the Linux binary from the
-[releases](https://github.com/uptech/alt/releases) page and drop
-it in your `PATH` and make sure it is executable with `chmod u+x alt`.
+If you are on another platform you will have to build from source. Given
+that `alt` is managed via Rust's Cargo. It can build as follows:
+
+```
+$ cargo build --release
+```
+
+Once you have built it successfully you should relocate the
+`target/release/alt` binary to a location that exists in your `PATH` so
+that you can easily use it.
+
+*Note:* The above requires of course that you have [rust](http://rust-lang.org)
+and Cargo.
 
 ## Use with Vim
 
@@ -75,3 +85,20 @@ endfunction
 " Find the alternate file for the current path and open it
 nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
 ```
+
+## License
+
+`alt` is Copyright © 2016 UpTech Works, LLC. It is free software, and
+may be redistributed under the terms specified in the LICENSE file.
+
+## About ![uptech](http://upte.ch/img/logo.png)
+
+`alt` is maintained and funded by [UpTech Works, LLC][uptech], a a
+software design & development agency & consultancy.
+
+We love open source software. See [our other projects][community] or
+[hire us][hire] to design, develop, and grow your product.
+
+[community]: https://github.com/uptech
+[hire]: http://upte.ch
+[uptech]: http://upte.ch
