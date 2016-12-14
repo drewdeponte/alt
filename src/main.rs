@@ -33,12 +33,12 @@ fn get_filename_minus_extension(path_str: &String) -> String {
 }
 
 fn is_test_file(path: &String) -> bool {
-    let re = Regex::new(r"^(features/|test/|spec/|tests/)").unwrap();
+    let re = Regex::new(r"^(features/|test/|spec/|tests/|\w*Tests/)").unwrap();
     re.is_match(path.as_str())
 }
 
 fn strip_test_words(filename: &String) -> String {
-    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_test|_steps)?(\.rb|\.exs|\.ex|\.js|\.py)?$").unwrap();
+    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_test|_steps|Tests|UITests|Specs|UISpecs)?(\.rb|\.exs|\.ex|\.js|\.py|\.swift)?$").unwrap();
     re.replace_all(filename.as_str(), "$p")
 }
 
