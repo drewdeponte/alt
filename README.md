@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cyphactor/alt.svg?branch=master)](https://travis-ci.org/cyphactor/alt)
+[![Build Status](https://travis-ci.org/uptech/alt.svg?branch=master)](https://travis-ci.org/uptech/alt)
 
 # Alt
 
