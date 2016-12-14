@@ -10,6 +10,10 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: Swift Quick Tests support
+* `Added`: Swift XCTest & XCUI Tests support
+* `Added`: Swift Package Manager Tests support
+
 #### [v2.0.1][v2.0.1] - 2016-07-22
 
 * `Fixed`: bug causing crash when dealing with files named a single char
