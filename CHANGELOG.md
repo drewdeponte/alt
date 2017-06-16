@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Fixed`: Bug preventing Cucumber support from working
+
 #### [v2.1.0][v2.1.0] - 2016-12-14
 
 * `Added`: Swift Quick Tests support

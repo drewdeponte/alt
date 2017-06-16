@@ -33,7 +33,7 @@ fn get_filename_minus_extension(path_str: &String) -> String {
 }
 
 fn is_test_file(path: &String) -> bool {
-    let re = Regex::new(r"^(features/|test/|spec/|tests/|\w*Tests/)").unwrap();
+    let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|\w*Tests/)").unwrap();
     re.is_match(path.as_str())
 }
 
