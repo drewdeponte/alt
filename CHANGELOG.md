@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v2.2.0][v2.2.0] - 2017-07-08
+
 * `Added`: support for Java Maven JUnit
 * `Fixed`: bug preventing Rake test alternates from working with Minitest
 
@@ -48,11 +50,12 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/cyphactor/alt/compare/v2.1.1...HEAD
+[unreleased]: https://github.com/cyphactor/alt/compare/v2.2.0...HEAD
 [v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
 [v1.0.0]: https://github.com/cyphactor/alt/compare/v0.0.1...v1.0.0
 [v2.0.0]: https://github.com/cyphactor/alt/compare/v1.0.0...v2.0.0
 [v2.0.1]: https://github.com/cyphactor/alt/compare/v2.0.0...v2.0.1
 [v2.1.0]: https://github.com/cyphactor/alt/compare/v2.0.1...v2.1.0
 [v2.1.1]: https://github.com/cyphactor/alt/compare/v2.1.0...v2.1.1
+[v2.2.0]: https://github.com/cyphactor/alt/compare/v2.1.1...v2.2.0
 
