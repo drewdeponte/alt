@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Fixed`: bug preventing Rake test alternates from working with Minitest
+
 #### [v2.1.1][v2.1.1] - 2017-06-15
 
 * `Fixed`: Bug preventing Cucumber support from working
