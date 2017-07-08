@@ -1,6 +1,6 @@
 extern crate regex;
 
-use regex::Regex;
+use self::regex::Regex;
 
 pub fn is_test_file(path: &String) -> bool {
     let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|\w*Tests/)").unwrap();

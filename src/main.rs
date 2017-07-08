@@ -1,6 +1,5 @@
 extern crate argparse;
 extern crate glob;
-extern crate regex;
 
 use argparse::{ArgumentParser, Store, StoreOption, Print};
 use std::io::BufReader;
@@ -8,7 +7,6 @@ use std::io::BufRead;
 use std::fs::File;
 use std::io::Write;
 use glob::glob;
-use regex::Regex;
 
 pub mod alt;
 
@@ -32,12 +30,6 @@ fn get_possible_files_from_glob() -> Result<Vec<std::path::PathBuf>, glob::Patte
 
 fn get_filename_minus_extension(path_str: &String) -> String {
     std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap().to_string()
-}
-
-
-fn strip_test_words(filename: &String) -> String {
-    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_test|_steps|Tests|UITests|Specs|UISpecs)?(\.rb|\.exs|\.ex|\.js|\.py|\.swift)?$").unwrap();
-    re.replace_all(filename.as_str(), "$p")
 }
 
 fn cleanse_path(path: &str) -> String {
@@ -135,7 +127,7 @@ fn main() {
     let cleansed_path = cleanse_path(&options.path);
     let mut filename = get_filename_minus_extension(&options.path);
     if alt::path::classification::is_test_file(&cleansed_path) {
-        filename = strip_test_words(&filename);
+        filename = alt::path::alteration::strip_test_words(&filename);
     }
 
     let best_match = if let Some(unwrapped_file) = options.file {
