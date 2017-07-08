@@ -10,6 +10,8 @@ use std::io::Write;
 use glob::glob;
 use regex::Regex;
 
+pub mod alt;
+
 fn identity<T>(x: T) -> T {x}
 
 macro_rules! printerr(
@@ -32,10 +34,6 @@ fn get_filename_minus_extension(path_str: &String) -> String {
     std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap().to_string()
 }
 
-fn is_test_file(path: &String) -> bool {
-    let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|\w*Tests/)").unwrap();
-    re.is_match(path.as_str())
-}
 
 fn strip_test_words(filename: &String) -> String {
     let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_test|_steps|Tests|UITests|Specs|UISpecs)?(\.rb|\.exs|\.ex|\.js|\.py|\.swift)?$").unwrap();
@@ -107,7 +105,7 @@ fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_
     let (_, alternate) = paths.iter()
         .map(|path| cleanse_path(&path))
         .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
-        .filter(|path| is_test_file(&path) != test_file)
+        .filter(|path| alt::path::classification::is_test_file(&path) != test_file)
         .fold((0 as f32, "".to_string()), |result, path| {
             let (highest_score, best_match) = result;
             let s = score(&path, &cleansed_path);
@@ -136,7 +134,7 @@ fn main() {
 
     let cleansed_path = cleanse_path(&options.path);
     let mut filename = get_filename_minus_extension(&options.path);
-    if is_test_file(&cleansed_path) {
+    if alt::path::classification::is_test_file(&cleansed_path) {
         filename = strip_test_words(&filename);
     }
 
@@ -144,7 +142,7 @@ fn main() {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, is_test_file(&cleansed_path))
+            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         } else {
             let f = match File::open(&unwrapped_file) {
                 Ok(file) => file,
@@ -155,13 +153,13 @@ fn main() {
             };
             let file = BufReader::new(&f);
             let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, is_test_file(&cleansed_path))
+            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
         match get_possible_files_from_glob() {
             Ok(paths) => {
                 let unwrapped_paths:Vec<String> = paths.iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
-                find_alt(&filename, &cleansed_path, unwrapped_paths, is_test_file(&cleansed_path))
+                find_alt(&filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
             },
             Err(e) => {
                 printerr!("Error reading paths {}", e);
@@ -170,4 +168,26 @@ fn main() {
         }
     };
     print!("{}", best_match);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cleanse_path;
+    use super::get_filename_minus_extension;
+
+    #[test]
+    fn cleanse_path_returns_path_with_dot_slash_prefix_stripped() {
+        assert_eq!("hoopty/doopty.thing",cleanse_path("./hoopty/doopty.thing"));
+    }
+
+    #[test]
+    fn cleanse_path_does_not_effect_non_dot_slash_prefixes() {
+        assert_eq!("foo/hoopty/doopty.thing",cleanse_path("foo/hoopty/doopty.thing"));
+    }
+
+    #[test]
+    fn get_filename_minus_extension_returns_the_filename_without_the_extension() {
+        let s = String::from("foo/hoopty/doopty.thing");
+        assert_eq!("doopty", get_filename_minus_extension(&s));
+    }
 }
