@@ -10,6 +10,7 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: support for Java Maven JUnit
 * `Fixed`: bug preventing Rake test alternates from working with Minitest
 
 #### [v2.1.1][v2.1.1] - 2017-06-15

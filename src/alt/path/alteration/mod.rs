@@ -3,7 +3,7 @@ extern crate regex;
 use self::regex::Regex;
 
 pub fn strip_test_words(filename: &String) -> String {
-    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_rake_test|_test|_steps|Tests|UITests|Specs|UISpecs)?(\.rb|\.exs|\.ex|\.js|\.py|\.swift)?$").unwrap();
+    let re = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_rake_test|_test|_steps|Tests|UITests|Specs|UISpecs|Test)?(\.rb|\.exs|\.ex|\.js|\.py|\.swift|\.java)?$").unwrap();
     re.replace_all(filename.as_str(), "$p")
 }
 
@@ -101,5 +101,13 @@ mod tests {
     fn strip_test_words_returns_filename_with_python_test_words_stripped() {
         let s = String::from("test_toaster.py");
         assert_eq!(strip_test_words(&s), "toaster");
+    }
+
+    // Java Maven JUnit
+
+    #[test]
+    fn strip_test_words_returns_filename_with_junit_test_words_stripped() {
+        let s = String::from("SomethingTest.java");
+        assert_eq!(strip_test_words(&s), "Something");
     }
 }

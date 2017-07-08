@@ -3,7 +3,7 @@ extern crate regex;
 use self::regex::Regex;
 
 pub fn is_test_file(path: &String) -> bool {
-    let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|\w*Tests/)").unwrap();
+    let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)").unwrap();
     re.is_match(path.as_str())
 }
 
@@ -348,6 +348,20 @@ mod tests {
     #[test]
     fn is_test_file_does_not_detect_cucumber_feature_files() {
         let s = String::from("features/project_management.feature");
+        assert_eq!(is_test_file(&s), false);
+    }
+
+    // Java Maven JUnit
+
+    #[test]
+    fn is_test_file_detects_java_maven_junit_test_files() {
+        let s = String::from("src/test/java/com/example/SomethingTest.java");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_does_not_detect_java_implementation_files() {
+        let s = String::from("src/main/java/com/example/Something.java");
         assert_eq!(is_test_file(&s), false);
     }
 }
