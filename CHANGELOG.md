@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: support for Groovy
+* `Changed`: specific extension handling into generic extension handling
+
 #### [v2.2.0][v2.2.0] - 2017-07-08
 
 * `Added`: support for Java Maven JUnit
