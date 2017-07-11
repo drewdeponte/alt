@@ -11,7 +11,7 @@ pub fn strip_test_words(filename: &String) -> String {
 mod tests {
     use super::strip_test_words;
 
-    # Groovy
+    // Groovy
 
     #[test]
     fn strip_test_words_returns_filename_with_groovy_test_words_stripped() {
