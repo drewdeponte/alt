@@ -86,6 +86,39 @@ endfunction
 nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
 ```
 
+### Faster with Less Noise
+
+So, `alt` supports passing the set of possible alternate paths in via STDIN
+rather than using the built-in glob mechanism it provides by default. This is an
+extremely powerful feature as it allows you to use an external tool, like
+`find`, to produce a filtered list of possible alternate paths. Filtering in
+this manner benefits you in two ways. First it eliminates noise you don't care
+about from the possible paths. Second, it reduces the set of possible paths
+`alt` has to process, in turn making `alt` faster.
+
+The following is how I have `alt` setup in my `vimrc` using `find` to produce
+the set of alternate paths.
+
+```vimscript
+" Run a given vim command on the results of alt from a given path.
+" See usage below.
+function! AltCommand(path, vim_command)
+	let l:alternate = system("find . -path ./_site -prune -or -path ./target -prune -or -path ./.DS_Store -prune -or -path ./build -prune -or -path ./Carthage -prune -or -path tags -prune -or -path ./tmp -prune -or -path ./log -prune -or -path ./.git -prune -or -type f -print | alt -f - " . a:path)
+	if empty(l:alternate)
+		echo "No alternate file for " . a:path . " exists!"
+	else
+		exec a:vim_command . " " . l:alternate
+	endif
+endfunction
+
+" Find the alternate file for the current path and open it
+nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
+```
+
+Details on passing the potential alternate paths in via STDIN can be found in
+the [Command Line Interface
+Reference](https://github.com/uptech/alt/wiki/Command-Line-Interface-Reference#-f--file-file).
+
 ## Contributing
 
 If you interested at all in contributing. Please do. We are welcoming
