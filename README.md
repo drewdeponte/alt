@@ -133,7 +133,7 @@ contributing.
 `alt` is Copyright © 2016 UpTech Works, LLC. It is free software, and
 may be redistributed under the terms specified in the LICENSE file.
 
-## About ![uptech](http://upte.ch/img/logo.png)
+## About <img src="http://upte.ch/img/logo.png" alt="uptech" height="48">
 
 `alt` is maintained and funded by [UpTech Works, LLC][uptech], a a
 software design & development agency & consultancy.
