@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: support for Scala Test/Spec/Suite
+* `Added`: man page
+
 #### [v2.3.0][v2.3.0] - 2017-07-10
 
 * `Added`: support for Groovy
