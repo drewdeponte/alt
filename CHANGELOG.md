@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v2.4.0][v2.4.0] - 2017-08-10
+
 * `Added`: support for Scala Test/Spec/Suite
 * `Added`: man page
 
@@ -58,7 +60,7 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/cyphactor/alt/compare/v2.3.0...HEAD
+[unreleased]: https://github.com/cyphactor/alt/compare/v2.4.0...HEAD
 [v0.0.1]: https://github.com/cyphactor/alt/compare/7c9b152...v0.0.1
 [v1.0.0]: https://github.com/cyphactor/alt/compare/v0.0.1...v1.0.0
 [v2.0.0]: https://github.com/cyphactor/alt/compare/v1.0.0...v2.0.0
@@ -67,4 +69,5 @@ that you can set version constraints properly.
 [v2.1.1]: https://github.com/cyphactor/alt/compare/v2.1.0...v2.1.1
 [v2.2.0]: https://github.com/cyphactor/alt/compare/v2.1.1...v2.2.0
 [v2.3.0]: https://github.com/cyphactor/alt/compare/v2.2.0...v2.3.0
+[v2.4.0]: https://github.com/cyphactor/alt/compare/v2.3.0...v2.4.0
 
