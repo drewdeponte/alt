@@ -12,7 +12,7 @@ mod tests {
     use super::is_test_file;
 
     // Swift/XCTest/XCUI/Quick
-    
+
     #[test]
     fn is_test_file_detects_swift_xctest_files() {
         let s = String::from("AutomotiveTests/Vehicles/VehicleAttributesVehicleTests.swift");
@@ -242,7 +242,7 @@ mod tests {
         let s = String::from("spec/fulfiller_spec.rb");
         assert_eq!(is_test_file(&s), true);
     }
-    
+
     // Hanami Container Arch
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
         let s = String::from("spec/offer_service/fulfiller_spec.rb");
         assert_eq!(is_test_file(&s), true);
     }
-    
+
     // Elixer ExUnit
 
     #[test]
@@ -362,6 +362,32 @@ mod tests {
     #[test]
     fn is_test_file_does_not_detect_java_implementation_files() {
         let s = String::from("src/main/java/com/example/Something.java");
+        assert_eq!(is_test_file(&s), false);
+    }
+
+    // Scala ScalaTest
+
+    #[test]
+    fn is_test_file_detects_scala_scalatest_test_files() {
+        let s = String::from("src/test/scala/com/example/SomethingTest.scala");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_scala_scalatest_spec_files() {
+        let s = String::from("src/test/scala/com/example/SomethingSpec.scala");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_scala_scalatest_suite_files() {
+        let s = String::from("src/test/scala/com/example/SomethingSuite.scala");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_does_not_detect_scala_implementation_files() {
+        let s = String::from("src/main/scala/com/example/Something.scala");
         assert_eq!(is_test_file(&s), false);
     }
 }
