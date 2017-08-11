@@ -29,8 +29,8 @@ asked questions please refer to the [Wiki](https://github.com/uptech/alt/wiki).
 
 ## Installation
 
-To install on Mac OS X or (MacOS) we provide a [Homebrew](http://brew.sh) tap
-which provides the `alt` formula. You can use it by doing the following:
+To install on macOS we provide a [Homebrew](http://brew.sh) tap which provides
+the `alt` formula. You can use it by doing the following:
 
 #### Add the Tap
 
@@ -44,8 +44,8 @@ brew tap "uptech/homebrew-oss"
 brew install uptech/oss/alt
 ```
 
-If you are on a platform other than Mac OS X or (MacOS) you will have to build
-your own version from source.
+If you are on a platform other than macOS you will have to build your own
+version from source.
 
 ### Build from Source
 
@@ -58,7 +58,8 @@ $ cargo build --release
 
 Once you have built it successfully you should relocate the
 `target/release/alt` binary to a location that exists in your `PATH` so
-that you can easily use it.
+that you can easily use it. You should also relocate the `doc/alt.1` man page
+to the appropriate location.
 
 *Note:* The above requires of course that you have [rust](http://rust-lang.org)
 and Cargo.
