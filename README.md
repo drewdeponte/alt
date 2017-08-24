@@ -29,6 +29,11 @@ asked questions please refer to the [Wiki](https://github.com/uptech/alt/wiki).
 
 ## Installation
 
+If you are on a platform other than macOS or Arch Linux you will have to build
+your own version from source.
+
+### macOS
+
 To install on macOS we provide a [Homebrew](http://brew.sh) tap which provides
 the `alt` formula. You can use it by doing the following:
 
@@ -44,8 +49,15 @@ brew tap "uptech/homebrew-oss"
 brew install uptech/oss/alt
 ```
 
-If you are on a platform other than macOS you will have to build your own
-version from source.
+### Arch Linux
+
+Install from the AUR:
+
+```
+git clone https://aur.archlinux.org/alt.git
+cd alt
+makepkg -si
+```
 
 ### Build from Source
 
