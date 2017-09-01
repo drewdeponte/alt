@@ -3,8 +3,10 @@ extern crate regex;
 use self::regex::Regex;
 
 pub fn is_test_file(path: &String) -> bool {
-    let re = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)").unwrap();
-    re.is_match(path.as_str())
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)").unwrap();
+    }
+    RE.is_match(path.as_str())
 }
 
 #[cfg(test)]
