@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/uptech/alt.svg?branch=master)](https://travis-ci.org/uptech/alt)
+[![Join the chat at https://gitter.im/uptech/alt](https://badges.gitter.im/uptech/alt.svg)](https://gitter.im/uptech/alt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Alt
 
-[![Join the chat at https://gitter.im/uptech/alt](https://badges.gitter.im/uptech/alt.svg)](https://gitter.im/uptech/alt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 `alt` is a command line utility that attempts to find the "alternate path" for
 the provided path. This is primarily intended for developers. It is written in
