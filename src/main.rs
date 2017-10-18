@@ -1,5 +1,6 @@
 extern crate argparse;
 extern crate glob;
+#[macro_use] extern crate lazy_static;
 
 use argparse::{ArgumentParser, Store, StoreOption, Print};
 use std::io::BufReader;
