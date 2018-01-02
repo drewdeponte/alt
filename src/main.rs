@@ -7,6 +7,8 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::cmp::Ordering;
 use walkdir::{DirEntry, WalkDir};
 
 pub mod alt;
@@ -30,7 +32,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
          .unwrap_or(false)
 }
 
-fn get_possible_files() -> Vec<std::path::PathBuf> {
+fn get_possible_files() -> Vec<PathBuf> {
     WalkDir::new(".")
         .follow_links(true)
         .into_iter()
@@ -48,7 +50,7 @@ fn get_possible_files() -> Vec<std::path::PathBuf> {
 }
 
 fn get_filename_minus_extension(path_str: &str) -> &str {
-    std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap()
+    Path::new(path_str).file_stem().unwrap().to_str().unwrap()
 }
 
 fn cleanse_path(path: &str) -> String {
@@ -112,21 +114,30 @@ fn score(s1: &str, s2: &str) -> f32 {
     (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
 
-fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, test_file: bool) -> String {
-    let (_, alternate) = paths.iter()
+fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_file: bool) -> String {
+    let result = paths.iter()
         .map(|path| cleanse_path(&path))
         .filter(|path| path.contains(filename))  // filter to paths that contain the filename
-        .filter(|path| alt::path::classification::is_test_file(&path) != test_file)
-        .fold((0 as f32, "".to_string()), |result, path| {
-            let (highest_score, best_match) = result;
-            let s = score(&path, &cleansed_path);
-            if s > highest_score {
-                (s, path)
-            } else {
-                (highest_score, best_match)
+        .filter(|path| alt::path::classification::is_test_file(&path) != is_test_file)
+        .map(|path| (score(&path, &cleansed_path), path))
+        .max_by(|&(scorea, _), &(scoreb, _)| {
+            if scorea > scoreb {
+                Ordering::Greater
+            }
+            else if scoreb < scorea {
+                Ordering::Less
+            }
+            else {
+                Ordering::Equal
             }
         });
-    alternate
+
+    if let Some((_, alternate)) = result {
+        alternate
+    }
+    else {
+        String::new()
+    }
 }
 
 fn parse_args_or_exit() -> Options {
@@ -181,7 +192,7 @@ fn main() {
             find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
-        let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
+        let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| path.to_str().unwrap().to_string()).collect();
         find_alt(filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
     };
     print!("{}", best_match);
