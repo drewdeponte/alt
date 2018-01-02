@@ -205,17 +205,17 @@ mod tests {
 
     #[test]
     fn cleanse_path_returns_path_with_dot_slash_prefix_stripped() {
-        assert_eq!("hoopty/doopty.thing",cleanse_path("./hoopty/doopty.thing"));
+        assert_eq!("hoopty/doopty.thing", cleanse_path("./hoopty/doopty.thing"));
     }
 
     #[test]
     fn cleanse_path_does_not_effect_non_dot_slash_prefixes() {
-        assert_eq!("foo/hoopty/doopty.thing",cleanse_path("foo/hoopty/doopty.thing"));
+        assert_eq!("foo/hoopty/doopty.thing", cleanse_path("foo/hoopty/doopty.thing"));
     }
 
     #[test]
     fn get_filename_minus_extension_returns_the_filename_without_the_extension() {
-        let s = String::from("foo/hoopty/doopty.thing");
-        assert_eq!("doopty", get_filename_minus_extension(&s));
+        let s = "foo/hoopty/doopty.thing";
+        assert_eq!("doopty", get_filename_minus_extension(s));
     }
 }
