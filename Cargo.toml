@@ -7,6 +7,6 @@ authors = [ "Andrew De Ponte <cyphactor@gmail.com>", "Brian Miller <brimil01@gma
 [dependencies]
 
 argparse = "0.2.1"
-glob = "0.2.11"
+walkdir = "2.0.1"
 regex = "0.1.73"
 lazy_static = "0.2"

@@ -1,5 +1,5 @@
 extern crate argparse;
-extern crate glob;
+extern crate walkdir;
 #[macro_use] extern crate lazy_static;
 
 use argparse::{ArgumentParser, Store, StoreOption, Print};
@@ -7,11 +7,9 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 use std::io::Write;
-use glob::glob;
+use walkdir::{DirEntry, WalkDir};
 
 pub mod alt;
-
-fn identity<T>(x: T) -> T {x}
 
 macro_rules! printerr(
     ($($arg:tt)*) => { {
@@ -25,8 +23,28 @@ struct Options {
     file: Option<String>
 }
 
-fn get_possible_files_from_glob() -> Result<Vec<std::path::PathBuf>, glob::PatternError> {
-    glob("**/*").map(|paths| paths.flat_map(identity).filter(|path| path.is_file()).collect())
+fn is_hidden(entry: &DirEntry) -> bool {
+    entry.file_name()
+         .to_str()
+         .map(|s| entry.depth() > 0 && s.starts_with("."))
+         .unwrap_or(false)
+}
+
+fn get_possible_files() -> Vec<std::path::PathBuf> {
+    WalkDir::new(".")
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(|e| !is_hidden(e))
+        .filter_map(|direntry| {
+            let entry = direntry.ok()?;
+            if entry.file_type().is_file() {
+                Some(entry.path().to_owned())
+            }
+            else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn get_filename_minus_extension(path_str: &String) -> String {
@@ -149,16 +167,8 @@ fn main() {
             find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
-        match get_possible_files_from_glob() {
-            Ok(paths) => {
-                let unwrapped_paths:Vec<String> = paths.iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
-                find_alt(&filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
-            },
-            Err(e) => {
-                printerr!("Error reading paths {}", e);
-                std::process::exit(1)
-            }
-        }
+        let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
+        find_alt(&filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
     };
     print!("{}", best_match);
 }
