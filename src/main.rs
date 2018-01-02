@@ -47,8 +47,8 @@ fn get_possible_files() -> Vec<std::path::PathBuf> {
         .collect()
 }
 
-fn get_filename_minus_extension(path_str: &String) -> String {
-    std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap().to_string()
+fn get_filename_minus_extension(path_str: &str) -> &str {
+    std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap()
 }
 
 fn cleanse_path(path: &str) -> String {
@@ -60,7 +60,7 @@ fn cleanse_path(path: &str) -> String {
     }
 }
 
-fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
+fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
     // Currently this is implemented using a dynamic programming solution similar
     // to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
     // where N is the length of one string and M is the length of the other
@@ -107,15 +107,15 @@ fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
     longest_length
 }
 
-fn score(s1: &String, s2: &String) -> f32 {
+fn score(s1: &str, s2: &str) -> f32 {
     let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
     (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
 
-fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_file: bool) -> String {
+fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, test_file: bool) -> String {
     let (_, alternate) = paths.iter()
         .map(|path| cleanse_path(&path))
-        .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
+        .filter(|path| path.contains(filename))  // filter to paths that contain the filename
         .filter(|path| alt::path::classification::is_test_file(&path) != test_file)
         .fold((0 as f32, "".to_string()), |result, path| {
             let (highest_score, best_match) = result;
@@ -146,20 +146,28 @@ fn parse_args_or_exit() -> Options {
     options
 }
 
+fn filename_without_extension_and_test_words(path: &str) -> &str {
+    let filename = get_filename_minus_extension(path);
+
+    if alt::path::classification::is_test_file(&path) {
+        alt::path::alteration::strip_test_words(filename)
+    }
+    else {
+        filename
+    }
+}
+
 fn main() {
     let options = parse_args_or_exit();
 
     let cleansed_path = cleanse_path(&options.path);
-    let mut filename = get_filename_minus_extension(&options.path);
-    if alt::path::classification::is_test_file(&cleansed_path) {
-        filename = alt::path::alteration::strip_test_words(&filename);
-    }
+    let filename = filename_without_extension_and_test_words(&cleansed_path);
 
     let best_match = if let Some(unwrapped_file) = options.possible_alternates_path {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         } else {
             let f = match File::open(&unwrapped_file) {
                 Ok(file) => file,
@@ -170,11 +178,11 @@ fn main() {
             };
             let file = BufReader::new(&f);
             let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
         let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
-        find_alt(&filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
+        find_alt(filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
     };
     print!("{}", best_match);
 }
