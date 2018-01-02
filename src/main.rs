@@ -20,7 +20,7 @@ macro_rules! printerr(
 
 struct Options {
     path: String,
-    file: Option<String>
+    possible_alternates_path: Option<String>
 }
 
 fn is_hidden(entry: &DirEntry) -> bool {
@@ -132,13 +132,13 @@ fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_
 fn main() {
     let mut options = Options {
         path: "".to_string(),
-        file: None
+        possible_alternates_path: None
     };
 
     { // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
         ap.add_option(&["-v", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "show version");
-        ap.refer(&mut options.file).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
+        ap.refer(&mut options.possible_alternates_path).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
         ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
         ap.parse_args_or_exit();
     }
@@ -149,7 +149,7 @@ fn main() {
         filename = alt::path::alteration::strip_test_words(&filename);
     }
 
-    let best_match = if let Some(unwrapped_file) = options.file {
+    let best_match = if let Some(unwrapped_file) = options.possible_alternates_path {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
