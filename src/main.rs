@@ -129,7 +129,7 @@ fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_
     alternate
 }
 
-fn main() {
+fn parse_args_or_exit() -> Options {
     let mut options = Options {
         path: "".to_string(),
         possible_alternates_path: None
@@ -142,6 +142,12 @@ fn main() {
         ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
         ap.parse_args_or_exit();
     }
+
+    options
+}
+
+fn main() {
+    let options = parse_args_or_exit();
 
     let cleansed_path = cleanse_path(&options.path);
     let mut filename = get_filename_minus_extension(&options.path);
