@@ -1,0 +1,3 @@
+[submodule "spec/fixtures/discourse"]
+	path = spec/fixtures/discourse
+	url = https://github.com/discourse/discourse.git
