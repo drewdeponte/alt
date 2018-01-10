@@ -9,5 +9,5 @@ The following are some ways that you can contribute:
 * by adding to or editing [the alt wiki](https://github.com/uptech/alt/wiki)
 * by adding a failing test for reproducible [reported bugs](https://github.com/uptech/alt/issues)
 * by reviewing [pull requests](https://github.com/uptech/alt/pulls) and suggesting improvements
-* by improving existing code or existing test coverage
-* by writing code (no patch is too small! fix typos or bad whitespace)
+* by [improving existing code](DEVELOPING.md) or [existing test coverage](DEVELOPING.md)
+* by [writing code](DEVELOPING.md) (no patch is too small! fix typos or bad whitespace)
