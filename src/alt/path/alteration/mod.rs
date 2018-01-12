@@ -6,7 +6,7 @@ pub fn strip_test_words(filename: &str) -> &str {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(test_)?(?P<p>\w+?)(_rake_spec|_spec|_rake_test|_test|_steps|Tests|UITests|Specs|UISpecs|Test|Spec|Suite)?(\.\w+)?$").unwrap();
     }
-    RE.captures(filename).and_then(|caps| caps.name("p")).unwrap_or(filename)
+    RE.captures(filename).and_then(|caps| caps.name("p")).map(|m| m.as_str()).unwrap_or(filename)
 }
 
 #[cfg(test)]

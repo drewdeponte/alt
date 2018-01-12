@@ -1,5 +1,5 @@
 extern crate argparse;
-extern crate walkdir;
+extern crate ignore;
 #[macro_use] extern crate lazy_static;
 
 use argparse::{ArgumentParser, Store, StoreOption, Print};
@@ -9,7 +9,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::cmp::Ordering;
-use walkdir::{DirEntry, WalkDir};
+use ignore::WalkBuilder;
 
 pub mod alt;
 
@@ -25,24 +25,15 @@ struct Options {
     possible_alternates_path: Option<String>
 }
 
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map(|s| entry.depth() > 0 && s.starts_with("."))
-         .unwrap_or(false)
-}
-
 fn get_possible_files() -> Vec<PathBuf> {
-    WalkDir::new(".")
+    WalkBuilder::new("./")
         .follow_links(true)
-        .into_iter()
-        .filter_entry(|e| !is_hidden(e))
+        .build()
         .filter_map(|direntry| {
             let entry = direntry.ok()?;
-            if entry.file_type().is_file() {
+            if entry.file_type()?.is_file() {
                 Some(entry.path().to_owned())
-            }
-            else {
+            } else {
                 None
             }
         })
