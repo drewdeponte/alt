@@ -1,5 +1,5 @@
 extern crate argparse;
-extern crate glob;
+extern crate walkdir;
 #[macro_use] extern crate lazy_static;
 
 use argparse::{ArgumentParser, Store, StoreOption, Print};
@@ -7,11 +7,11 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 use std::io::Write;
-use glob::glob;
+use std::path::{Path, PathBuf};
+use std::cmp::Ordering;
+use walkdir::{DirEntry, WalkDir};
 
 pub mod alt;
-
-fn identity<T>(x: T) -> T {x}
 
 macro_rules! printerr(
     ($($arg:tt)*) => { {
@@ -22,15 +22,35 @@ macro_rules! printerr(
 
 struct Options {
     path: String,
-    file: Option<String>
+    possible_alternates_path: Option<String>
 }
 
-fn get_possible_files_from_glob() -> Result<Vec<std::path::PathBuf>, glob::PatternError> {
-    glob("**/*").map(|paths| paths.flat_map(identity).filter(|path| path.is_file()).collect())
+fn is_hidden(entry: &DirEntry) -> bool {
+    entry.file_name()
+         .to_str()
+         .map(|s| entry.depth() > 0 && s.starts_with("."))
+         .unwrap_or(false)
 }
 
-fn get_filename_minus_extension(path_str: &String) -> String {
-    std::path::Path::new(path_str).file_stem().unwrap().to_str().unwrap().to_string()
+fn get_possible_files() -> Vec<PathBuf> {
+    WalkDir::new(".")
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(|e| !is_hidden(e))
+        .filter_map(|direntry| {
+            let entry = direntry.ok()?;
+            if entry.file_type().is_file() {
+                Some(entry.path().to_owned())
+            }
+            else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn get_filename_minus_extension(path_str: &str) -> &str {
+    Path::new(path_str).file_stem().unwrap().to_str().unwrap()
 }
 
 fn cleanse_path(path: &str) -> String {
@@ -42,7 +62,7 @@ fn cleanse_path(path: &str) -> String {
     }
 }
 
-fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
+fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
     // Currently this is implemented using a dynamic programming solution similar
     // to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
     // where N is the length of one string and M is the length of the other
@@ -89,53 +109,76 @@ fn find_longest_common_substring_length(s1: &String, s2: &String) -> i32 {
     longest_length
 }
 
-fn score(s1: &String, s2: &String) -> f32 {
+fn score(s1: &str, s2: &str) -> f32 {
     let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
     (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
 }
 
-fn find_alt(filename: &String, cleansed_path: &String, paths: Vec<String>, test_file: bool) -> String {
-    let (_, alternate) = paths.iter()
+fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_file: bool) -> String {
+    let result = paths.iter()
         .map(|path| cleanse_path(&path))
-        .filter(|path| path.contains(filename.as_str()))  // filter to paths that contain the filename
-        .filter(|path| alt::path::classification::is_test_file(&path) != test_file)
-        .fold((0 as f32, "".to_string()), |result, path| {
-            let (highest_score, best_match) = result;
-            let s = score(&path, &cleansed_path);
-            if s > highest_score {
-                (s, path)
-            } else {
-                (highest_score, best_match)
+        .filter(|path| path.contains(filename))  // filter to paths that contain the filename
+        .filter(|path| alt::path::classification::is_test_file(&path) != is_test_file)
+        .map(|path| (score(&path, &cleansed_path), path))
+        .max_by(|&(scorea, _), &(scoreb, _)| {
+            if scorea > scoreb {
+                Ordering::Greater
+            }
+            else if scoreb < scorea {
+                Ordering::Less
+            }
+            else {
+                Ordering::Equal
             }
         });
-    alternate
+
+    if let Some((_, alternate)) = result {
+        alternate
+    }
+    else {
+        String::new()
+    }
 }
 
-fn main() {
+fn parse_args_or_exit() -> Options {
     let mut options = Options {
         path: "".to_string(),
-        file: None
+        possible_alternates_path: None
     };
 
     { // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
         ap.add_option(&["-v", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "show version");
-        ap.refer(&mut options.file).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
+        ap.refer(&mut options.possible_alternates_path).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
         ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
         ap.parse_args_or_exit();
     }
 
-    let cleansed_path = cleanse_path(&options.path);
-    let mut filename = get_filename_minus_extension(&options.path);
-    if alt::path::classification::is_test_file(&cleansed_path) {
-        filename = alt::path::alteration::strip_test_words(&filename);
-    }
+    options
+}
 
-    let best_match = if let Some(unwrapped_file) = options.file {
+fn filename_without_extension_and_test_words(path: &str) -> &str {
+    let filename = get_filename_minus_extension(path);
+
+    if alt::path::classification::is_test_file(&path) {
+        alt::path::alteration::strip_test_words(filename)
+    }
+    else {
+        filename
+    }
+}
+
+fn main() {
+    let options = parse_args_or_exit();
+
+    let cleansed_path = cleanse_path(&options.path);
+    let filename = filename_without_extension_and_test_words(&cleansed_path);
+
+    let best_match = if let Some(unwrapped_file) = options.possible_alternates_path {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         } else {
             let f = match File::open(&unwrapped_file) {
                 Ok(file) => file,
@@ -146,19 +189,11 @@ fn main() {
             };
             let file = BufReader::new(&f);
             let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
-            find_alt(&filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
-        match get_possible_files_from_glob() {
-            Ok(paths) => {
-                let unwrapped_paths:Vec<String> = paths.iter().map(|path| { path.to_str().unwrap().to_string() }).collect();
-                find_alt(&filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
-            },
-            Err(e) => {
-                printerr!("Error reading paths {}", e);
-                std::process::exit(1)
-            }
-        }
+        let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| path.to_str().unwrap().to_string()).collect();
+        find_alt(filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
     };
     print!("{}", best_match);
 }
@@ -170,17 +205,17 @@ mod tests {
 
     #[test]
     fn cleanse_path_returns_path_with_dot_slash_prefix_stripped() {
-        assert_eq!("hoopty/doopty.thing",cleanse_path("./hoopty/doopty.thing"));
+        assert_eq!("hoopty/doopty.thing", cleanse_path("./hoopty/doopty.thing"));
     }
 
     #[test]
     fn cleanse_path_does_not_effect_non_dot_slash_prefixes() {
-        assert_eq!("foo/hoopty/doopty.thing",cleanse_path("foo/hoopty/doopty.thing"));
+        assert_eq!("foo/hoopty/doopty.thing", cleanse_path("foo/hoopty/doopty.thing"));
     }
 
     #[test]
     fn get_filename_minus_extension_returns_the_filename_without_the_extension() {
-        let s = String::from("foo/hoopty/doopty.thing");
-        assert_eq!("doopty", get_filename_minus_extension(&s));
+        let s = "foo/hoopty/doopty.thing";
+        assert_eq!("doopty", get_filename_minus_extension(s));
     }
 }
