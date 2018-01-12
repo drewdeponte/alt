@@ -71,3 +71,56 @@ user     system      total        real
 For impl. file:   0.120000   0.510000 209.580000 (201.857882)
 For test file:    0.110000   0.480000 196.160000 (187.753652)
 ```
+
+### Releasing
+
+#### Prep alt Repo Release
+
+1. Bump the version in the `Cargo.toml` and in the `CHANGELOG.md` and build it using `cargo build --release` to make sure that `Cargo.lock` is up to date. Then commit it as a version bump commit and push it up to master.
+2. Tag the version bump commit at the appropriate version tag and push the tags up.
+3. Define a new Release on GitHub for that version tag and copy the changes for this version from the `CHANGELOG.md` into the release notes.
+
+#### Update alt Homebrew Formula in homebrew-oss
+
+1. Open the `homebrew-oss/Formula/alt.rb` file in your editor.
+2. Copy the url from GitHub for the `tar.gz` of release that you made in the previous step and paste it in place of the current `url` in the formula.
+3. Update the `version` in the formula to match this new version.
+4. Download the `tar.gz` of this release from GitHub
+5. Generate the sha256 of the downloaded `tar.gz` by running, `shasum -a 256 the.tar.gz`.
+6. Copy the sha256 sum and paste it in place of the current `sha256`.
+
+#### Test out installing from the new Formula
+
+```
+brew edit alt
+```
+
+Make the same changes as we just did in the above section and save them.
+
+```
+brew uninstall alt
+```
+
+Make sure all of the version are uninstalled.
+
+```
+brew install -s --build-bottle alt
+```
+
+#### Bottle It Up
+
+Make sure you are in the `alt.rb` formula directory in `homebrew-oss`.
+
+```
+brew bottle alt
+```
+
+The above will produce a file looking something like `alt-3.0.0.high_sierra.bottle.tar.gz` and output a new DSL example for the bottle.
+
+Merge the DSL example with the one already in `alt.rb` appropriately.
+
+#### Release It
+
+Stage both the `alt-3.0.0.high_sierra.bottle.tar.gz` and the changes to the formula and commit them and push them.
+
+Thats it.
