@@ -8,7 +8,7 @@ dependencies = [
 
 [[package]]
 name = "alt"
-version = "2.4.0"
+version = "3.0.0"
 dependencies = [
  "argparse 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ignore 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",

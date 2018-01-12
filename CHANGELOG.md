@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v3.0.0][v3.0.0] - 2018-01-12
+
 * `Added`: -a option override the default of ignoring hidden directory entries
 * `Changed`: walkdir implemantion to ignore::WalkBuilder to gain performance and glob based ignoring
 * `Changed`: glob implementation to walkdir to gain performance
@@ -74,4 +76,5 @@ that you can set version constraints properly.
 [v2.2.0]: https://github.com/cyphactor/alt/compare/v2.1.1...v2.2.0
 [v2.3.0]: https://github.com/cyphactor/alt/compare/v2.2.0...v2.3.0
 [v2.4.0]: https://github.com/cyphactor/alt/compare/v2.3.0...v2.4.0
+[v3.0.0]: https://github.com/cyphactor/alt/compare/v2.4.0...v3.0.0
 
