@@ -20,18 +20,23 @@ Output the version of \fBalt\fR
 .BR \-h ", " \-\-help
 Output the usage help
 .TP
+.BR \-a
+Include directory entries whose names begin with a dot
+.TP
 .BR "\fB\-f\fR \fIfile\fR, \fB\-\-file\fR \fIfile\fR"
 Read possible alternates from a \fIfile\fR rather than using the default
-directory glob technique built into \fBalt\fR. This allows you to improve
-performance by reducing the set of possible alternates prior to processing. If
-\fIfile\fR is "-" it will read the possible alternates from \fIstdin\fR. The
-following is an example of using find, a very common command line utility, to
-produce a filtered set of paths and pass them to \fBalt\fR:
+directory walk technique built into \fBalt\fR. If \fIfile\fR is "-" it will read
+the possible alternates from \fIstdin\fR. The following is an example of using
+find, a very common command line utility, to produce a filtered set of paths and
+pass them to \fBalt\fR:
 
     find . -path tags -prune -or -path ./log -prune -or -type f -print | alt -f - spec/lib/foo/api_spec.rb
 
 In the above example it excludes tags and log file paths from the possible
-alternate paths and passes the rest into \fBalt\fR.
+alternate paths and passes the rest into \fBalt\fR. \fBNote:\fR This example is
+less performant than the built in directory walk technique and it's filtering.
+It is simply an example of how you can pass output from one command line tool to
+alt as input.
 .SH USE WITH VIM
 There's no vim plugin. It may not end up needing one; we'll see. For now, you
 can just stick the code below in your \fI.vimrc\fR to invoke \fBalt\fR with
@@ -52,36 +57,20 @@ both the terminal based Vim and GUI based Vim like MacVim.
     " Find the alternate file for the current path and open it
     nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
 
-.SH FASTER WITH LESS NOISE
-So, \fBalt\fR supports passing the set of possible alternate paths in via
-\fISTDIN\fR rather than using the built\-in glob mechanism it provides by
-default. This is an extremely powerful feature as it allows you to use an
-external tool, like find, to produce a filtered list of possible alternate
-paths. Filtering in this manner benefits you in two ways. First it eliminates
-noise you don't care about from the possible paths. Second, it reduces the set
-of possible paths \fBalt\fR has to process, in turn making \fBalt\fR faster.
-
-The following is how I have \fBalt\fR setup in my vimrc using find to produce
-the set of alternate paths.
-
-    " Run a given vim command on the results of alt from a given path.
-    " See usage below.
-    function! AltCommand(path, vim_command)
-      let l:alternate = system("find . -path ./_site -prune -or -path ./target -prune -or -path ./.DS_Store -prune -or -path ./build -prune -or -path ./Carthage -prune -or -path tags -prune -or -path ./tmp -prune -or -path ./log -prune -or -path ./.git -prune -or -type f -print | alt -f - " . a:path)
-      if empty(l:alternate)
-        echo "No alternate file for " . a:path . " exists!"
-      else
-        exec a:vim_command . " " . l:alternate
-      endif
-    endfunction
-
-    " Find the alternate file for the current path and open it
-    nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
+.SH IGNORING THINGS
+\fBalt\fR by default ignores hidden directory entries, globs defined in a
+\fB.ignore\fR file and globs defined in your project's \fB.gitignore\fR and your
+global \fB.gitignore\fR. It does this because in our experience that is
+generally the behavior you want. If however you want for example to be able to
+alternate between hidden files for some reason, you can always use the \-a
+option. If you want to have \fBalt\fR ignore some specific paths/files that you
+don't want Git to ignore. You can simply define them in the \fB.ignore\fR file
+at the root of your project.
 
 .SH AUTHOR
 Originally written by Andrew De Ponte <cyphactor@gmail.com>.
 .SH COPYRIGHT
-Copyright (c) 2016, 2017 UpTech Works, LLC
+Copyright (c) 2016-2018 UpTech Works, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
