@@ -2,7 +2,7 @@ extern crate argparse;
 extern crate ignore;
 #[macro_use] extern crate lazy_static;
 
-use argparse::{ArgumentParser, Store, StoreOption, Print};
+use argparse::{ArgumentParser, Store, StoreOption, StoreTrue, Print};
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
@@ -22,12 +22,14 @@ macro_rules! printerr(
 
 struct Options {
     path: String,
-    possible_alternates_path: Option<String>
+    possible_alternates_path: Option<String>,
+    include_hidden: bool
 }
 
-fn get_possible_files() -> Vec<PathBuf> {
+fn get_possible_files(ignore_hidden: bool) -> Vec<PathBuf> {
     WalkBuilder::new("./")
         .follow_links(true)
+        .hidden(ignore_hidden)
         .build()
         .filter_map(|direntry| {
             let entry = direntry.ok()?;
@@ -134,13 +136,15 @@ fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_fil
 fn parse_args_or_exit() -> Options {
     let mut options = Options {
         path: "".to_string(),
-        possible_alternates_path: None
+        possible_alternates_path: None,
+        include_hidden: false
     };
 
     { // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
         ap.add_option(&["-v", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "show version");
         ap.refer(&mut options.possible_alternates_path).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
+        ap.refer(&mut options.include_hidden).add_option(&["-a"], StoreTrue, "include directory entries whose names begin with a dot");
         ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
         ap.parse_args_or_exit();
     }
@@ -183,7 +187,7 @@ fn main() {
             find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
         }
     } else {
-        let unwrapped_paths: Vec<String> = get_possible_files().iter().map(|path| path.to_str().unwrap().to_string()).collect();
+        let unwrapped_paths: Vec<String> = get_possible_files(!options.include_hidden).iter().map(|path| path.to_str().unwrap().to_string()).collect();
         find_alt(filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
     };
     print!("{}", best_match);
