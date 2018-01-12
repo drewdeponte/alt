@@ -10,6 +10,10 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: -a option override the default of ignoring hidden directory entries
+* `Changed`: walkdir implemantion to ignore::WalkBuilder to gain performance and glob based ignoring
+* `Changed`: glob implementation to walkdir to gain performance
+
 #### [v2.4.0][v2.4.0] - 2017-08-10
 
 * `Added`: support for Scala Test/Spec/Suite
