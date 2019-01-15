@@ -319,6 +319,14 @@ mod tests {
         assert_eq!(is_test_file(&s), true);
     }
 
+    // Mocha JavaScript
+
+    #[test]
+    fn is_test_file_detects_js_mocha_test_files() {
+        let s = String::from("test/foo/bar/jacked.test.js");
+        assert_eq!(is_test_file(&s), true);
+    }
+
     #[test]
     fn is_test_file_does_not_detect_js_implementation_files() {
         let s = String::from("foo/bar/jacked.js");
