@@ -4,7 +4,7 @@ use self::regex::Regex;
 
 pub fn is_test_file(path: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)").unwrap();
+        static ref RE: Regex = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/|.*tests/)").unwrap();
     }
     RE.is_match(path)
 }
@@ -330,6 +330,18 @@ mod tests {
     #[test]
     fn is_test_file_does_not_detect_js_implementation_files() {
         let s = String::from("foo/bar/jacked.js");
+        assert_eq!(is_test_file(&s), false);
+    }
+
+    #[test]
+    fn is_test_file_detects_js_monorepo_test_files() {
+        let s = String::from("packages/module1/tests/file1.spec.js");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_does_not_detect_js_monorepo_implementation_files() {
+        let s = String::from("packages/module1/src/file1.js");
         assert_eq!(is_test_file(&s), false);
     }
 
