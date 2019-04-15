@@ -111,6 +111,7 @@ fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_fil
     let result = paths.iter()
         .map(|path| cleanse_path(&path))
         .filter(|path| path.contains(filename))  // filter to paths that contain the filename
+        .filter(|path| !path.contains(cleansed_path))
         .filter(|path| alt::path::classification::is_test_file(&path) != is_test_file)
         .map(|path| (score(&path, &cleansed_path), path))
         .max_by(|&(scorea, _), &(scoreb, _)| {
@@ -129,7 +130,38 @@ fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_fil
         alternate
     }
     else {
-        String::new()
+        // Fallback if no result is found. This fallback is exactly the same as the first attempt
+        // except it does NOT filter out paths based on classification of test files or not. So, it
+        // has a chance of potentially being less accurate in some cases but if we aren't able to
+        // match an alternate with the test file classification this may find the correct file for
+        // a language, framework, naming scheme or structure we haven't added test classification
+        // support for yet.
+        //
+        // TODO: We need to figure out a way DRY this up for long term maintenance since it is
+        // 99.9% the same as above.
+        let result_two = paths.iter()
+            .map(|path| cleanse_path(&path))
+            .filter(|path| path.contains(filename))  // filter to paths that contain the filename
+            .filter(|path| !path.contains(cleansed_path))
+            .map(|path| (score(&path, &cleansed_path), path))
+            .max_by(|&(scorea, _), &(scoreb, _)| {
+                if scorea > scoreb {
+                    Ordering::Greater
+                }
+                else if scoreb < scorea {
+                    Ordering::Less
+                }
+                else {
+                    Ordering::Equal
+                }
+            });
+
+        if let Some((_, alternate)) = result_two {
+            alternate
+        }
+        else {
+            String::new()
+        }
     }
 }
 
