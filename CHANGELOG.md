@@ -10,6 +10,10 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v3.2.0][v3.2.0] - 2020-02-18
+
+* `Added`: support for mocha type test files for JS & TypeScript in same dir
+
 #### [v3.1.0][v3.1.0] - 2019-01-26
 
 * `Added`: support for mocha type test files for JS & TypeScript
@@ -81,5 +85,6 @@ that you can set version constraints properly.
 [v2.3.0]: https://github.com/cyphactor/alt/compare/v2.2.0...v2.3.0
 [v2.4.0]: https://github.com/cyphactor/alt/compare/v2.3.0...v2.4.0
 [v3.0.0]: https://github.com/cyphactor/alt/compare/v2.4.0...v3.0.0
-[v3.0.0]: https://github.com/cyphactor/alt/compare/v3.0.0...v3.1.0
+[v3.1.0]: https://github.com/cyphactor/alt/compare/v3.0.0...v3.1.0
+[v3.2.0]: https://github.com/cyphactor/alt/compare/v3.1.0...v3.2.0
 
