@@ -4,7 +4,7 @@ use self::regex::Regex;
 
 pub fn is_test_file(path: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
     }
     RE.is_match(path)
 }
@@ -333,6 +333,17 @@ mod tests {
         assert_eq!(is_test_file(&s), false);
     }
 
+    #[test]
+    fn is_test_file_detects_js_mocha_test_files_in_src_directory() {
+        let s = String::from("src/foo/bar/jacked.test.js");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_js_mocha_spec_files_in_src_directory() {
+        let s = String::from("src/foo/bar/jacked.spec.js");
+        assert_eq!(is_test_file(&s), true);
+    }
     // Python
 
     #[test]
