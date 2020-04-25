@@ -4,7 +4,7 @@ use self::regex::Regex;
 
 pub fn is_test_file(path: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/))|(?:^((\w+/)+spec/|(\w+/)+test/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
     }
     RE.is_match(path)
 }
@@ -155,6 +155,12 @@ mod tests {
         assert_eq!(is_test_file(&s), true);
     }
 
+    #[test]
+    fn is_test_file_detects_rails_monorepo_test_files() {
+        let s = String::from("components/module1/test/app/controllers/file_controller_test.rb");
+        assert_eq!(is_test_file(&s), true);
+    }
+
     // Rails RSpec
 
     #[test]
@@ -191,6 +197,18 @@ mod tests {
     fn is_test_file_detects_rspec_rake_test_files() {
         let s = String::from("spec/bar/foo_rake_spec.rb");
         assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_rails_monorepo_spec_files() {
+        let s = String::from("components/module1/spec/app/controllers/file_controller_spec.rb");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_rails_monorepo_implementation_files() {
+        let s = String::from("components/module1/app/controller/file_controller.rb");
+        assert_eq!(is_test_file(&s), false);
     }
 
     // Hanami App Arch
