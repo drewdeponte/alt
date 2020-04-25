@@ -344,6 +344,19 @@ mod tests {
         let s = String::from("src/foo/bar/jacked.spec.js");
         assert_eq!(is_test_file(&s), true);
     }
+
+    #[test]
+    fn is_test_file_detects_jsx_jest_test_files_in_src_directory() {
+        let s = String::from("src/components/foo/bar/index.spec.jsx");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_does_not_detects_jsx_files_in_src_directory() {
+        let s = String::from("src/components/foo/bar/index.jsx");
+        assert_eq!(is_test_file(&s), false);
+    }
+
     // Python
 
     #[test]
