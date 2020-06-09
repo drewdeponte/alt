@@ -4,7 +4,7 @@ use self::regex::Regex;
 
 pub fn is_test_file(path: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/|.*spec/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/))|(?:^((\w+/)+?spec/|(\w+/)+?test/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
     }
     RE.is_match(path)
 }
@@ -152,6 +152,12 @@ mod tests {
     #[test]
     fn is_test_file_detects_minitest_rake_test_files() {
         let s = String::from("test/bar/foo_rake_test.rb");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_detects_rails_monorepo_test_files() {
+        let s = String::from("components/module1/test/app/controllers/file_controller_test.rb");
         assert_eq!(is_test_file(&s), true);
     }
 
