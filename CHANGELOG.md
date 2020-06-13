@@ -10,6 +10,9 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: support for Rails monorepo spec & test files
+* `Added`: support for JSX specs
+
 #### [v3.2.0][v3.2.0] - 2020-02-18
 
 * `Added`: support for mocha type test files for JS & TypeScript in same dir
