@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v3.3.0][v3.3.0] - 2020-06-12
+
 * `Added`: support for Rails monorepo spec & test files
 * `Added`: support for JSX specs
 
@@ -90,4 +92,5 @@ that you can set version constraints properly.
 [v3.0.0]: https://github.com/cyphactor/alt/compare/v2.4.0...v3.0.0
 [v3.1.0]: https://github.com/cyphactor/alt/compare/v3.0.0...v3.1.0
 [v3.2.0]: https://github.com/cyphactor/alt/compare/v3.1.0...v3.2.0
+[v3.3.0]: https://github.com/cyphactor/alt/compare/v3.2.0...v3.3.0
 
