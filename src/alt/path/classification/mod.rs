@@ -4,7 +4,15 @@ use self::regex::Regex;
 
 pub fn is_test_file(path: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/))|(?:^((\w+/)+spec/|(\w+/)+test/))|(?:^(.+\.(?:spec|test)\.\w+)$)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?x) # enable comments like this
+        (?:^(features/step_definitions/|test/|spec/|tests/|src/test/|\w*Tests/)) # Match specific directory names. e.g. <GITROOT>/tests/
+        |
+        (?:^((\w+/)+spec/|(\w+/)+test/)) # match sub-directories. e.g. foo/test/
+        |
+        (?:^(.+\.(?:spec|test)\.\w+)$) # match files that have a sub-extension of `.test`. e.g. `foo.test.js`
+        | 
+        (?:^(.+(?:_test)\.\w+)$) # match files that contain a _test. e.g. `foo_test.go`
+        ").unwrap();
     }
     RE.is_match(path)
 }
@@ -440,6 +448,18 @@ mod tests {
     #[test]
     fn is_test_file_does_not_detect_scala_implementation_files() {
         let s = String::from("src/main/scala/com/example/Something.scala");
+        assert_eq!(is_test_file(&s), false);
+    }
+
+    #[test]
+    fn is_test_file_detects_go_test_files() {
+        let s = String::from("src/main/main_test.go");
+        assert_eq!(is_test_file(&s), true);
+    }
+
+    #[test]
+    fn is_test_file_does_not_detect_go_implementation_files() {
+        let s = String::from("src/main/main.go");
         assert_eq!(is_test_file(&s), false);
     }
 }
