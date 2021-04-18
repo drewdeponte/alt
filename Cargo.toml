@@ -6,7 +6,7 @@ authors = [ "Drew De Ponte <cyphactor@gmail.com>", "Brian Miller <brimil01@gmail
 
 [dependencies]
 
-argparse = "0.2.1"
-ignore = "0.3.1"
-regex = "0.2.5"
-lazy_static = "1"
+argparse = "0.2.2"
+ignore = "0.4.17"
+regex = "1.4.5"
+lazy_static = "1.4.0"
