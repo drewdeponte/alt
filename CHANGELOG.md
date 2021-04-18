@@ -10,6 +10,8 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+* `Added`: support for foo_test.go file types
+
 #### [v3.3.0][v3.3.0] - 2020-06-12
 
 * `Added`: support for Rails monorepo spec & test files
