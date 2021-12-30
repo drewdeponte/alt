@@ -92,10 +92,10 @@ mod tests {
         assert_eq!(strip_test_words(&s), "foo");
     }
 
-    // Elixer ExUnit
+    // Elixir ExUnit
 
     #[test]
-    fn strip_test_words_returns_filename_with_elixer_exunit_test_words_stripped() {
+    fn strip_test_words_returns_filename_with_elixir_exunit_test_words_stripped() {
         let s = String::from("supervisor_test.exs");
         assert_eq!(strip_test_words(&s), "supervisor");
     }

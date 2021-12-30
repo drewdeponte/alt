@@ -323,16 +323,16 @@ mod tests {
         assert_eq!(is_test_file(&s), true);
     }
 
-    // Elixer ExUnit
+    // Elixir ExUnit
 
     #[test]
-    fn is_test_file_detects_elixer_exunit_files() {
+    fn is_test_file_detects_elixir_exunit_files() {
         let s = String::from("test/lib/my_awesome_app/supervisor_test.exs");
         assert_eq!(is_test_file(&s), true);
     }
 
     #[test]
-    fn is_test_file_does_not_detect_elixer_implementation_files() {
+    fn is_test_file_does_not_detect_elixir_implementation_files() {
         let s = String::from("lib/my_awesome_app/supervisor.ex");
         assert_eq!(is_test_file(&s), false);
     }
