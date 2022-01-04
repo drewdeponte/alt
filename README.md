@@ -5,7 +5,16 @@
 
 
 `alt` is a command line utility that attempts to find the "alternate path" for
-the provided path. This is primarily intended for developers. It is written in
+the provided path.
+
+The "alternate path" could be the test file associated to
+the implementation file you gave it the path for. Or, it could be a lock file
+for a dependency specification file. Or, it could be an implementation file
+associated with an interface file. `alt` works by analyzing the similarity
+between file names and paths to identify the "alternate path" such that it can
+be used across many different use cases.
+
+This is primarily intended for developers. It is written in
 Rust. Hence, it is compiled and distributed as a binary.
 
 It was originally written to alternate files in vim, but has no dependency on
