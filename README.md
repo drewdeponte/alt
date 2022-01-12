@@ -136,7 +136,7 @@ may be redistributed under the terms specified in the LICENSE file.
 
 ## About <img src="http://upte.ch/img/logo.png" alt="uptech" height="48">
 
-`alt` is maintained and funded by [UpTech Works, LLC][uptech], a a
+`alt` is maintained and funded by [UpTech Works, LLC][uptech], a
 software design & development agency & consultancy.
 
 We love open source software. See [our other projects][community] or
