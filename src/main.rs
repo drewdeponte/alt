@@ -1,15 +1,16 @@
 extern crate argparse;
 extern crate ignore;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
-use argparse::{ArgumentParser, Store, StoreOption, StoreTrue, Print};
-use std::io::BufReader;
-use std::io::BufRead;
+use argparse::{ArgumentParser, Print, Store, StoreOption, StoreTrue};
+use ignore::WalkBuilder;
+use std::cmp::Ordering;
 use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::cmp::Ordering;
-use ignore::WalkBuilder;
 
 pub mod alt;
 
@@ -23,7 +24,7 @@ macro_rules! printerr(
 struct Options {
     path: String,
     possible_alternates_path: Option<String>,
-    include_hidden: bool
+    include_hidden: bool,
 }
 
 fn get_possible_files(ignore_hidden: bool) -> Vec<PathBuf> {
@@ -71,7 +72,7 @@ fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
     // and moving to a similarity ranking algorithm that maybe cares about
     // subsequences rather that substrings, etc.
     if s1.is_empty() || s2.is_empty() {
-        return 0
+        return 0;
     }
 
     let mut m: Vec<Vec<i32>> = Vec::with_capacity(s1.len());
@@ -90,7 +91,7 @@ fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
             if s1_bytes[i] == s2_bytes[j] {
                 m[i][j] = 1;
                 if i > 0 && j > 0 {
-                    m[i][j] += m[i-1][j-1];
+                    m[i][j] += m[i - 1][j - 1];
                 }
                 if m[i][j] > longest_length {
                     longest_length = m[i][j];
@@ -104,31 +105,29 @@ fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
 
 fn score(s1: &str, s2: &str) -> f32 {
     let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
-    (longest_match_length/s2.len() as f32) * (longest_match_length/s1.len() as f32)
+    (longest_match_length / s2.len() as f32) * (longest_match_length / s1.len() as f32)
 }
 
 fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_file: bool) -> String {
-    let result = paths.iter()
+    let result = paths
+        .iter()
         .map(|path| cleanse_path(&path))
-        .filter(|path| path.contains(filename))  // filter to paths that contain the filename
+        .filter(|path| path.contains(filename)) // filter to paths that contain the filename
         .filter(|path| alt::path::classification::is_test_file(&path) != is_test_file)
         .map(|path| (score(&path, &cleansed_path), path))
         .max_by(|&(scorea, _), &(scoreb, _)| {
             if scorea > scoreb {
                 Ordering::Greater
-            }
-            else if scoreb < scorea {
+            } else if scoreb < scorea {
                 Ordering::Less
-            }
-            else {
+            } else {
                 Ordering::Equal
             }
         });
 
     if let Some((_, alternate)) = result {
         alternate
-    }
-    else {
+    } else {
         String::new()
     }
 }
@@ -137,15 +136,30 @@ fn parse_args_or_exit() -> Options {
     let mut options = Options {
         path: "".to_string(),
         possible_alternates_path: None,
-        include_hidden: false
+        include_hidden: false,
     };
 
-    { // block limits of borrows by refer() method calls
+    {
+        // block limits of borrows by refer() method calls
         let mut ap = ArgumentParser::new();
-        ap.add_option(&["-v", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "show version");
-        ap.refer(&mut options.possible_alternates_path).add_option(&["-f", "--file"], StoreOption, "possible alternates file, - for stdin");
-        ap.refer(&mut options.include_hidden).add_option(&["-a"], StoreTrue, "include directory entries whose names begin with a dot");
-        ap.refer(&mut options.path).add_argument("PATH", Store, "path to find alternate for").required();
+        ap.add_option(
+            &["-v", "--version"],
+            Print(env!("CARGO_PKG_VERSION").to_string()),
+            "show version",
+        );
+        ap.refer(&mut options.possible_alternates_path).add_option(
+            &["-f", "--file"],
+            StoreOption,
+            "possible alternates file, - for stdin",
+        );
+        ap.refer(&mut options.include_hidden).add_option(
+            &["-a"],
+            StoreTrue,
+            "include directory entries whose names begin with a dot",
+        );
+        ap.refer(&mut options.path)
+            .add_argument("PATH", Store, "path to find alternate for")
+            .required();
         ap.parse_args_or_exit();
     }
 
@@ -157,8 +171,7 @@ fn filename_without_extension_and_test_words(path: &str) -> &str {
 
     if alt::path::classification::is_test_file(&path) {
         alt::path::alteration::strip_test_words(filename)
-    }
-    else {
+    } else {
         filename
     }
 }
@@ -173,7 +186,12 @@ fn main() {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
-            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(
+                filename,
+                &cleansed_path,
+                paths,
+                alt::path::classification::is_test_file(&cleansed_path),
+            )
         } else {
             let f = match File::open(&unwrapped_file) {
                 Ok(file) => file,
@@ -184,11 +202,24 @@ fn main() {
             };
             let file = BufReader::new(&f);
             let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
-            find_alt(filename, &cleansed_path, paths, alt::path::classification::is_test_file(&cleansed_path))
+            find_alt(
+                filename,
+                &cleansed_path,
+                paths,
+                alt::path::classification::is_test_file(&cleansed_path),
+            )
         }
     } else {
-        let unwrapped_paths: Vec<String> = get_possible_files(!options.include_hidden).iter().map(|path| path.to_str().unwrap().to_string()).collect();
-        find_alt(filename, &cleansed_path, unwrapped_paths, alt::path::classification::is_test_file(&cleansed_path))
+        let unwrapped_paths: Vec<String> = get_possible_files(!options.include_hidden)
+            .iter()
+            .map(|path| path.to_str().unwrap().to_string())
+            .collect();
+        find_alt(
+            filename,
+            &cleansed_path,
+            unwrapped_paths,
+            alt::path::classification::is_test_file(&cleansed_path),
+        )
     };
     print!("{}", best_match);
 }
@@ -205,7 +236,10 @@ mod tests {
 
     #[test]
     fn cleanse_path_does_not_effect_non_dot_slash_prefixes() {
-        assert_eq!("foo/hoopty/doopty.thing", cleanse_path("foo/hoopty/doopty.thing"));
+        assert_eq!(
+            "foo/hoopty/doopty.thing",
+            cleanse_path("foo/hoopty/doopty.thing")
+        );
     }
 
     #[test]
