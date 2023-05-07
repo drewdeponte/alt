@@ -1,27 +1,43 @@
 .TH ALT 1
 .SH NAME
-alt \- find the "alternate path" for the given path
+alt \- find the "alternate paths" for the given path
 .SH SYNOPSIS
 .B alt
 [OPTIONS] PATH
 .SH DESCRIPTION
 .B alt
-finds the alternate file for the given PATH based on similarity ranking. For example, if you were in a Ruby project and ran
+finds alternate file paths for the given PATH based on a similarity ranking. For example, if you were in a Ruby project and ran
 .B alt
 .IR spec/app/queues/fee/user_fee_submission_spec.rb
-it would output
+the output would include ranked at the top
 .IR app/queues/fee/user_fee_submission.rb.
 In this case the alternate for the test file is the implementation file.
+.B alt
+by default outputs all possible alternate paths in ranked order. Originally the
+behavior was to only output the highest ranked file path. To retain this
+behavior simply use the truncate option with a value of 1.
 .SH OPTIONS
 .TP
 .BR \-v ", " \-\-version
 Output the version of \fBalt\fR
+.TP
+.BR \-t ", " \-\-truncate " " TRUNCATE
+Truncate the output to a specified number of alternates. (default: 0 - do not truncate)
+.TP
+.BR \-\-filename\-weight " " WEIGHT
+Override the default weight of filenames in the scoring algorithm (default: 10.0)
+.TP
+.BR \-\-path\-weight " " WEIGHT
+Override the default weight of paths in the scoring algorithm (default: 1.0)
 .TP
 .BR \-h ", " \-\-help
 Output the usage help
 .TP
 .BR \-a
 Include directory entries whose names begin with a dot
+.TP
+.BR \-j
+Use threads to do similarity scoring in parallel (default: false)
 .TP
 .BR "\fB\-f\fR \fIfile\fR, \fB\-\-file\fR \fIfile\fR"
 Read possible alternates from a \fIfile\fR rather than using the default
@@ -37,25 +53,70 @@ alternate paths and passes the rest into \fBalt\fR. \fBNote:\fR This example is
 less performant than the built in directory walk technique and it's filtering.
 It is simply an example of how you can pass output from one command line tool to
 alt as input.
-.SH USE WITH VIM
-There's no vim plugin. It may not end up needing one; we'll see. For now, you
-can just stick the code below in your \fI.vimrc\fR to invoke \fBalt\fR with
-\fI<leader>\fR. Note that \fBalt\fR and the Vim Script example below work in
-both the terminal based Vim and GUI based Vim like MacVim.
+.SH USE WITH NEOVIM
+There's no NeoVim or Vim plugin. It may not end up needing one; we will see. The
+snippet below is a basic setup I use in my NeoVim to tie \fBalt\fR into
+\fBtelescope\fR so that I can fuzzy select the ranked alternate paths. For now,
+you can just stick the code below in your \fIinit.lua\fR to invoke \fBalt\fR
+with \fI<leader>\fR. Note that \fBalt\fR and the NeoVim Lua example below work
+in both the terminal based NeoVim and GUI based NeoVim.
 
-    " Run a given vim command on the results of alt from a given path.
-    " See usage below.
-    function! AltCommand(path, vim_command)
-      let l:alternate = system("alt " . a:path)
-      if empty(l:alternate)
-        echo "No alternate file for " . a:path . " exists!"
+    -- ----------------------------------------------
+    -- Alternate File Switching
+    -- ----------------------------------------------
+    local pickers = require "telescope.pickers"
+    local finders = require "telescope.finders"
+    local conf = require("telescope.config").values
+
+    local alternates_picker = function(alternates, opts)
+      opts = opts or {}
+      pickers.new(opts, {
+        prompt_title = "alternates",
+        finder = finders.new_table {
+          results = alternates
+        },
+        sorter = conf.generic_sorter(opts),
+      }):find()
+    end
+
+    function alt(path)
+      local function isempty(s)
+        return s == nil or s == ''
+      end
+
+      -- This is where you can configure it with CLI options so
+      -- it behaves how you want it to.
+      local alternates = vim.fn.system("some/path/alt " .. path)
+      if isempty(alternates) then
+        return nil
       else
-        exec a:vim_command . " " . l:alternate
-      endif
-    endfunction
+        local alternates_table = {}
+        for s in alternates:gmatch("[^\r\n]+") do
+          table.insert(alternates_table, s)
+        end
+        return alternates_table
+      end
+    end
 
-    " Find the alternate file for the current path and open it
-    nnoremap <leader>. :w<cr>:call AltCommand(expand('%'), ':e')<cr>
+    function alt_command(path, alt_handler)
+      local current_file_path = vim.fn.expand('%')
+      local alternate_file_paths = alt(current_file_path)
+      if alternate_file_paths == nil then
+        print("No alternate files found for " .. current_file_path .. "!")
+      else
+        alt_handler(current_file_path, alternate_file_paths)
+      end
+    end
+
+    function alt_handler(current_file_path, alternate_file_paths)
+      -- vim.cmd('w')
+      -- vim.cmd('e ' .. alternate_file_path)
+      alternates_picker(alternate_file_paths)
+    end
+
+    vim.keymap.set('n', '<leader>.', function()
+      alt_command(vim.fn.expand('%'), alt_handler)
+    end)
 
 .SH IGNORING THINGS
 \fBalt\fR by default ignores hidden directory entries, globs defined in a
@@ -68,9 +129,9 @@ don't want Git to ignore. You can simply define them in the \fB.ignore\fR file
 at the root of your project.
 
 .SH AUTHOR
-Originally written by Andrew De Ponte <cyphactor@gmail.com>.
+Drew De Ponte <cyphactor@gmail.com>
 .SH COPYRIGHT
-Copyright (c) 2016-2018 UpTech Works, LLC
+Copyright (c) 2016-2023 UpTech Works, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

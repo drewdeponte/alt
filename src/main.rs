@@ -1,16 +1,16 @@
 extern crate argparse;
 extern crate ignore;
-#[macro_use]
-extern crate lazy_static;
 
+use alt::path::scoring::ScoredPath;
+use alt::path::utils::cleanse_path;
+use alt::{find_alt, find_alt_with_threads};
 use argparse::{ArgumentParser, Print, Store, StoreOption, StoreTrue};
 use ignore::WalkBuilder;
-use std::cmp::Ordering;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub mod alt;
 
@@ -25,6 +25,10 @@ struct Options {
     path: String,
     possible_alternates_path: Option<String>,
     include_hidden: bool,
+    truncate: usize,
+    filename_weight: f32,
+    path_weight: f32,
+    use_threads: bool,
 }
 
 fn get_possible_files(ignore_hidden: bool) -> Vec<PathBuf> {
@@ -43,100 +47,15 @@ fn get_possible_files(ignore_hidden: bool) -> Vec<PathBuf> {
         .collect()
 }
 
-fn get_filename_minus_extension(path_str: &str) -> &str {
-    Path::new(path_str).file_stem().unwrap().to_str().unwrap()
-}
-
-fn cleanse_path(path: &str) -> String {
-    let s = path.to_string();
-    if s.len() > 1 && s[0..2].to_string() == "./" {
-        s[2..].to_string()
-    } else {
-        s
-    }
-}
-
-fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
-    // Currently this is implemented using a dynamic programming solution similar
-    // to http://www.geeksforgeeks.org/longest-common-substring/. This is O(N*M)
-    // where N is the length of one string and M is the length of the other
-    // string.
-    //
-    // Another option would of course be to explore using something like a
-    // suffix tree to solve this problem, something like, the following.
-    // http://www.geeksforgeeks.org/suffix-tree-application-5-longest-common-substring-2/
-    // This is O(M+N) to build a Generalized Suffix Tree and O(M+N) to find the
-    // the longest common substring via depth first search.
-    //
-    // Beyond that we would have to explore not caring about longest substring
-    // and moving to a similarity ranking algorithm that maybe cares about
-    // subsequences rather that substrings, etc.
-    if s1.is_empty() || s2.is_empty() {
-        return 0;
-    }
-
-    let mut m: Vec<Vec<i32>> = Vec::with_capacity(s1.len());
-    for _ in 0..s1.len() {
-        let v: Vec<i32> = vec![0; s2.len()];
-        m.push(v);
-    }
-
-    let mut longest_length = 0;
-
-    let s1_bytes = s1.as_bytes();
-    let s2_bytes = s2.as_bytes();
-
-    for i in 0..s1.len() {
-        for j in 0..s2.len() {
-            if s1_bytes[i] == s2_bytes[j] {
-                m[i][j] = 1;
-                if i > 0 && j > 0 {
-                    m[i][j] += m[i - 1][j - 1];
-                }
-                if m[i][j] > longest_length {
-                    longest_length = m[i][j];
-                }
-            }
-        }
-    }
-
-    longest_length
-}
-
-fn score(s1: &str, s2: &str) -> f32 {
-    let longest_match_length: f32 = find_longest_common_substring_length(s1, s2) as f32;
-    (longest_match_length / s2.len() as f32) * (longest_match_length / s1.len() as f32)
-}
-
-fn find_alt(filename: &str, cleansed_path: &str, paths: Vec<String>, is_test_file: bool) -> String {
-    let result = paths
-        .iter()
-        .map(|path| cleanse_path(&path))
-        .filter(|path| path.contains(filename)) // filter to paths that contain the filename
-        .filter(|path| alt::path::classification::is_test_file(&path) != is_test_file)
-        .map(|path| (score(&path, &cleansed_path), path))
-        .max_by(|&(scorea, _), &(scoreb, _)| {
-            if scorea > scoreb {
-                Ordering::Greater
-            } else if scoreb < scorea {
-                Ordering::Less
-            } else {
-                Ordering::Equal
-            }
-        });
-
-    if let Some((_, alternate)) = result {
-        alternate
-    } else {
-        String::new()
-    }
-}
-
 fn parse_args_or_exit() -> Options {
     let mut options = Options {
         path: "".to_string(),
         possible_alternates_path: None,
         include_hidden: false,
+        truncate: 0,
+        filename_weight: 10.0,
+        path_weight: 1.0,
+        use_threads: false,
     };
 
     {
@@ -146,6 +65,21 @@ fn parse_args_or_exit() -> Options {
             &["-v", "--version"],
             Print(env!("CARGO_PKG_VERSION").to_string()),
             "show version",
+        );
+        ap.refer(&mut options.truncate).add_option(
+            &["-t", "--truncate"],
+            Store,
+            "truncate results to provided length. 0 = don't truncate, > 0 = truncate",
+        );
+        ap.refer(&mut options.filename_weight).add_option(
+            &["--filename-weight"],
+            Store,
+            "override the default weight of filenames in the scoring algorithm (default: 10.0)",
+        );
+        ap.refer(&mut options.path_weight).add_option(
+            &["--path-weight"],
+            Store,
+            "override the default weight of paths in the scoring algorithm (default: 1.0)",
         );
         ap.refer(&mut options.possible_alternates_path).add_option(
             &["-f", "--file"],
@@ -157,6 +91,11 @@ fn parse_args_or_exit() -> Options {
             StoreTrue,
             "include directory entries whose names begin with a dot",
         );
+        ap.refer(&mut options.use_threads).add_option(
+            &["-j"],
+            StoreTrue,
+            "Use threads to do similarity scoring in parallel (default: false)",
+        );
         ap.refer(&mut options.path)
             .add_argument("PATH", Store, "path to find alternate for")
             .required();
@@ -166,13 +105,17 @@ fn parse_args_or_exit() -> Options {
     options
 }
 
-fn filename_without_extension_and_test_words(path: &str) -> &str {
-    let filename = get_filename_minus_extension(path);
+fn scored_paths_to_string(scored_paths: &[ScoredPath]) -> String {
+    let matches: Vec<String> = scored_paths
+        .iter()
+        .map(|(_, path)| path.to_string())
+        // .map(|(score, path)| format!("{:?} {}", score, path.to_string()))
+        .collect();
 
-    if alt::path::classification::is_test_file(&path) {
-        alt::path::alteration::strip_test_words(filename)
+    if matches.is_empty() {
+        String::new()
     } else {
-        filename
+        matches.join("\n")
     }
 }
 
@@ -180,18 +123,29 @@ fn main() {
     let options = parse_args_or_exit();
 
     let cleansed_path = cleanse_path(&options.path);
-    let filename = filename_without_extension_and_test_words(&cleansed_path);
 
-    let best_match = if let Some(unwrapped_file) = options.possible_alternates_path {
+    let altenate_paths_string = if let Some(unwrapped_file) = options.possible_alternates_path {
         if unwrapped_file == "-" {
             let stdin = std::io::stdin();
             let paths: Vec<String> = stdin.lock().lines().map(|path| path.unwrap()).collect();
-            find_alt(
-                filename,
-                &cleansed_path,
-                paths,
-                alt::path::classification::is_test_file(&cleansed_path),
-            )
+            let scored_paths: Vec<ScoredPath> = match options.use_threads {
+                true => find_alt_with_threads(
+                    &cleansed_path,
+                    paths,
+                    options.truncate,
+                    options.filename_weight,
+                    options.path_weight,
+                )
+                .expect("Failed to find available parallelism"),
+                false => find_alt(
+                    &cleansed_path,
+                    paths,
+                    options.truncate,
+                    options.filename_weight,
+                    options.path_weight,
+                ),
+            };
+            scored_paths_to_string(&scored_paths)
         } else {
             let f = match File::open(&unwrapped_file) {
                 Ok(file) => file,
@@ -202,49 +156,76 @@ fn main() {
             };
             let file = BufReader::new(&f);
             let paths: Vec<String> = file.lines().map(|path| path.unwrap()).collect();
-            find_alt(
-                filename,
-                &cleansed_path,
-                paths,
-                alt::path::classification::is_test_file(&cleansed_path),
-            )
+            let scored_paths: Vec<ScoredPath> = match options.use_threads {
+                true => find_alt_with_threads(
+                    &cleansed_path,
+                    paths,
+                    options.truncate,
+                    options.filename_weight,
+                    options.path_weight,
+                )
+                .expect("Failed to find available parallelism"),
+                false => find_alt(
+                    &cleansed_path,
+                    paths,
+                    options.truncate,
+                    options.filename_weight,
+                    options.path_weight,
+                ),
+            };
+            scored_paths_to_string(&scored_paths)
         }
     } else {
         let unwrapped_paths: Vec<String> = get_possible_files(!options.include_hidden)
             .iter()
             .map(|path| path.to_str().unwrap().to_string())
             .collect();
-        find_alt(
-            filename,
-            &cleansed_path,
-            unwrapped_paths,
-            alt::path::classification::is_test_file(&cleansed_path),
-        )
+        let scored_paths: Vec<ScoredPath> = match options.use_threads {
+            true => find_alt_with_threads(
+                &cleansed_path,
+                unwrapped_paths,
+                options.truncate,
+                options.filename_weight,
+                options.path_weight,
+            )
+            .expect("Failed to find available parallelism"),
+            false => find_alt(
+                &cleansed_path,
+                unwrapped_paths,
+                options.truncate,
+                options.filename_weight,
+                options.path_weight,
+            ),
+        };
+        scored_paths_to_string(&scored_paths)
     };
-    print!("{}", best_match);
+    print!("{}", altenate_paths_string);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::cleanse_path;
-    use super::get_filename_minus_extension;
+    use super::{scored_paths_to_string, ScoredPath};
 
     #[test]
-    fn cleanse_path_returns_path_with_dot_slash_prefix_stripped() {
-        assert_eq!("hoopty/doopty.thing", cleanse_path("./hoopty/doopty.thing"));
+    fn scored_paths_to_string_with_no_scored_paths() {
+        let scored_paths: Vec<ScoredPath> = Vec::new();
+        let val = scored_paths_to_string(&scored_paths);
+
+        assert_eq!(val, "");
     }
 
     #[test]
-    fn cleanse_path_does_not_effect_non_dot_slash_prefixes() {
+    fn scored_paths_to_string_with_some_scored_paths() {
+        let scored_paths: Vec<ScoredPath> = vec![
+            (0.3, "some/path/to/a/file.ts".to_owned()),
+            (0.2, "another/path/to/a/foo.ts".to_owned()),
+            (0.1, "foo/bar/car/zar.ts".to_owned()),
+        ];
+        let val = scored_paths_to_string(&scored_paths);
+
         assert_eq!(
-            "foo/hoopty/doopty.thing",
-            cleanse_path("foo/hoopty/doopty.thing")
+            val,
+            "some/path/to/a/file.ts\nanother/path/to/a/foo.ts\nfoo/bar/car/zar.ts"
         );
-    }
-
-    #[test]
-    fn get_filename_minus_extension_returns_the_filename_without_the_extension() {
-        let s = "foo/hoopty/doopty.thing";
-        assert_eq!("doopty", get_filename_minus_extension(s));
     }
 }
