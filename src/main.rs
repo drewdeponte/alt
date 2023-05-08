@@ -106,17 +106,11 @@ fn parse_args_or_exit() -> Options {
 }
 
 fn scored_paths_to_string(scored_paths: &[ScoredPath]) -> String {
-    let matches: Vec<String> = scored_paths
+    scored_paths
         .iter()
-        .map(|scored_path| scored_path.path.clone())
-        // .map(|(score, path)| format!("{:?} {}", score, path.to_string()))
-        .collect();
-
-    if matches.is_empty() {
-        String::new()
-    } else {
-        matches.join("\n")
-    }
+        .map(|scored_path| scored_path.path.to_string())
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 fn main() {
