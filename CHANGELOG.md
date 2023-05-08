@@ -10,6 +10,20 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v4.0.0][v4.0.0] - 2023-05-08
+
+* `Added`: multi-line/multi-alternate output
+* `Changed`: default behavior to output all possible alternates sorted by score
+* `Added`: CLI option to truncate possible alternates down to a specific number
+* `Changed`: scoring algorithm to be able to weight filenames different than paths
+* `Added`: CLI option to override the scoring algorithms default filename weight
+* `Added`: CLI option to override the scoring algorithms default path weight
+* `Added`: support for optionally using threads to score in parallel
+* `Added`: CLI option to enable parallel scoring
+* `Fixed`: bug where scored paths weren't being sorted properly
+* `Fixed`: bug where some paths would score as NaN and make sorting off
+* `Changed`: Vim example to a NeoVim Lua example as that is what I use
+
 #### [v3.4.0][v3.4.0] - 2021-04-17
 
 * `Added`: support for foo_test.go file types
@@ -83,7 +97,7 @@ that you can set version constraints properly.
 
 * `Added`: initial functional version with basic docs
 
-[unreleased]: https://github.com/uptech/alt/compare/v3.1.0...HEAD
+[unreleased]: https://github.com/uptech/alt/compare/v4.0.0...HEAD
 [v0.0.1]: https://github.com/uptech/alt/compare/7c9b152...v0.0.1
 [v1.0.0]: https://github.com/uptech/alt/compare/v0.0.1...v1.0.0
 [v2.0.0]: https://github.com/uptech/alt/compare/v1.0.0...v2.0.0
@@ -98,3 +112,4 @@ that you can set version constraints properly.
 [v3.2.0]: https://github.com/uptech/alt/compare/v3.1.0...v3.2.0
 [v3.3.0]: https://github.com/uptech/alt/compare/v3.2.0...v3.3.0
 [v3.4.0]: https://github.com/uptech/alt/compare/v3.3.0...v3.4.0
+[v4.0.0]: https://github.com/uptech/alt/compare/v3.4.0...v4.0.0
