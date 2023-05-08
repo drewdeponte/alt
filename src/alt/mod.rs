@@ -1,5 +1,4 @@
 use alt::path::scoring::{score_paths, ScoredPath};
-use std::cmp::Ordering;
 use std::thread;
 
 pub mod path;
@@ -14,7 +13,7 @@ pub fn find_alt(
     let mut possible_paths_with_scores: Vec<ScoredPath> =
         score_paths(paths, cleansed_path, filename_weight, path_weight);
 
-    possible_paths_with_scores.sort_by(order_scored_paths);
+    possible_paths_with_scores.sort_by(|x, y| x.partial_cmp(y).unwrap());
 
     truncate_scored_paths(&mut possible_paths_with_scores, truncate_len);
 
@@ -71,21 +70,11 @@ pub fn find_alt_with_threads(
 
     let mut scored_paths = collections_of_scored_paths.concat();
 
-    scored_paths.sort_by(order_scored_paths);
+    scored_paths.sort_by(|x, y| x.partial_cmp(y).unwrap());
 
     truncate_scored_paths(&mut scored_paths, truncate_len);
 
     Ok(scored_paths)
-}
-
-fn order_scored_paths(scored_path_a: &ScoredPath, scored_path_b: &ScoredPath) -> Ordering {
-    if scored_path_a.0 > scored_path_b.0 {
-        Ordering::Less
-    } else if scored_path_a.0 < scored_path_b.0 {
-        Ordering::Greater
-    } else {
-        Ordering::Equal
-    }
 }
 
 fn truncate_scored_paths(scored_paths: &mut Vec<ScoredPath>, len: usize) {
@@ -97,18 +86,16 @@ fn truncate_scored_paths(scored_paths: &mut Vec<ScoredPath>, len: usize) {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        find_alt, find_alt_with_threads, order_scored_paths, truncate_scored_paths, ScoredPath,
-    };
+    use super::{find_alt, find_alt_with_threads, truncate_scored_paths, ScoredPath};
 
     #[test]
     fn truncate_scored_paths_with_zero_len() {
         let mut scored_paths: Vec<ScoredPath> = vec![
-            (0.8, "some/path/to/a/file.ts".to_owned()),
-            (0.4, "some/path/to/another/foo.ts".to_owned()),
-            (0.2, "some/other_path/to/a/bar.ts".to_owned()),
-            (0.1, "some/short/path/zoo.ts".to_owned()),
-            (0.023, "some/blue/fortytwo/sports_ball.ts".to_owned()),
+            ScoredPath::new(0.8, "some/path/to/a/file.ts".to_owned()),
+            ScoredPath::new(0.4, "some/path/to/another/foo.ts".to_owned()),
+            ScoredPath::new(0.2, "some/other_path/to/a/bar.ts".to_owned()),
+            ScoredPath::new(0.1, "some/short/path/zoo.ts".to_owned()),
+            ScoredPath::new(0.023, "some/blue/fortytwo/sports_ball.ts".to_owned()),
         ];
 
         truncate_scored_paths(&mut scored_paths, 0);
@@ -119,11 +106,11 @@ mod tests {
     #[test]
     fn truncate_scored_paths_with_non_zero_len() {
         let mut scored_paths: Vec<ScoredPath> = vec![
-            (0.8, "some/path/to/a/file.ts".to_owned()),
-            (0.4, "some/path/to/another/foo.ts".to_owned()),
-            (0.2, "some/other_path/to/a/bar.ts".to_owned()),
-            (0.1, "some/short/path/zoo.ts".to_owned()),
-            (0.023, "some/blue/fortytwo/sports_ball.ts".to_owned()),
+            ScoredPath::new(0.8, "some/path/to/a/file.ts".to_owned()),
+            ScoredPath::new(0.4, "some/path/to/another/foo.ts".to_owned()),
+            ScoredPath::new(0.2, "some/other_path/to/a/bar.ts".to_owned()),
+            ScoredPath::new(0.1, "some/short/path/zoo.ts".to_owned()),
+            ScoredPath::new(0.023, "some/blue/fortytwo/sports_ball.ts".to_owned()),
         ];
 
         truncate_scored_paths(&mut scored_paths, 3);
@@ -133,32 +120,30 @@ mod tests {
 
     #[test]
     fn order_scored_paths_with_a_larger() {
-        let ordering = order_scored_paths(
-            &(0.3, "some/path/to/a/file.ts".to_owned()),
-            &(0.2, "some/other/path/bar.ts".to_owned()),
+        let ordering = ScoredPath::partial_cmp(
+            &(0.3, "some/path/to/a/file.ts".to_owned()).into(),
+            &(0.2, "some/other/path/bar.ts".to_owned()).into(),
         );
-
-        assert_eq!(ordering, std::cmp::Ordering::Less);
+        assert_eq!(ordering, Some(std::cmp::Ordering::Less))
     }
 
     #[test]
     fn order_scored_paths_with_a_smaller() {
-        let ordering = order_scored_paths(
-            &(0.2, "some/path/to/a/file.ts".to_owned()),
-            &(0.3, "some/other/path/bar.ts".to_owned()),
+        let ordering = ScoredPath::partial_cmp(
+            &(0.2, "some/path/to/a/file.ts".to_owned()).into(),
+            &(0.3, "some/other/path/bar.ts".to_owned()).into(),
         );
-
-        assert_eq!(ordering, std::cmp::Ordering::Greater);
+        assert_eq!(ordering, Some(std::cmp::Ordering::Greater));
     }
 
     #[test]
     fn order_scored_paths_with_a_and_b_equal() {
-        let ordering = order_scored_paths(
-            &(0.3, "some/path/to/a/file.ts".to_owned()),
-            &(0.3, "some/other/path/bar.ts".to_owned()),
+        let ordering = ScoredPath::partial_cmp(
+            &(0.3, "some/path/to/a/file.ts".to_owned()).into(),
+            &(0.3, "some/other/path/bar.ts".to_owned()).into(),
         );
 
-        assert_eq!(ordering, std::cmp::Ordering::Equal);
+        assert_eq!(ordering, Some(std::cmp::Ordering::Equal));
     }
 
     #[test]
@@ -173,12 +158,12 @@ mod tests {
         let scored_paths: Vec<ScoredPath> =
             find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
-        assert!(scored_paths[0].0 > scored_paths[1].0);
-        assert!(scored_paths[1].0 > scored_paths[2].0);
-        assert!(scored_paths[2].0 > scored_paths[3].0);
-        assert!(scored_paths[3].0 > scored_paths[4].0);
+        assert!(scored_paths[0].score > scored_paths[1].score);
+        assert!(scored_paths[1].score > scored_paths[2].score);
+        assert!(scored_paths[2].score > scored_paths[3].score);
+        assert!(scored_paths[3].score > scored_paths[4].score);
 
-        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
+        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.path).collect();
         assert_eq!(
             stripped_scored_paths,
             vec![
@@ -205,7 +190,7 @@ mod tests {
             find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
 
-        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
+        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.path).collect();
         assert_eq!(
             stripped_scored_paths,
             vec![
@@ -230,10 +215,10 @@ mod tests {
         let scored_paths: Vec<ScoredPath> =
             find_alt("src/models/nft-wallet.ts", paths, 3, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 3);
-        assert!(scored_paths[0].0 > scored_paths[1].0);
-        assert!(scored_paths[1].0 > scored_paths[2].0);
+        assert!(scored_paths[0].score > scored_paths[1].score);
+        assert!(scored_paths[1].score > scored_paths[2].score);
 
-        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
+        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.path).collect();
         assert_eq!(
             stripped_scored_paths,
             vec![
@@ -256,12 +241,12 @@ mod tests {
         let scored_paths: Vec<ScoredPath> =
             find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
-        assert!(scored_paths[0].0 > scored_paths[1].0);
-        assert!(scored_paths[1].0 > scored_paths[2].0);
-        assert!(scored_paths[2].0 > scored_paths[3].0);
-        assert!(scored_paths[3].0 > scored_paths[4].0);
+        assert!(scored_paths[0].score > scored_paths[1].score);
+        assert!(scored_paths[1].score > scored_paths[2].score);
+        assert!(scored_paths[2].score > scored_paths[3].score);
+        assert!(scored_paths[3].score > scored_paths[4].score);
 
-        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
+        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.path).collect();
         assert_eq!(
             stripped_scored_paths,
             vec![
@@ -287,7 +272,7 @@ mod tests {
             find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0);
         assert_eq!(scored_paths.len(), 5);
 
-        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
+        let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.path).collect();
         assert_eq!(
             stripped_scored_paths,
             vec![

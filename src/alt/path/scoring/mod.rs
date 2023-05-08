@@ -1,7 +1,35 @@
 use super::utils::cleanse_path;
-use std::path::Path;
+use std::{cmp::Ordering, path::Path};
 
-pub type ScoredPath = (f32, String);
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScoredPath {
+    pub score: f32,
+    pub path: String,
+}
+
+impl From<(f32, String)> for ScoredPath {
+    fn from(value: (f32, String)) -> Self {
+        ScoredPath::new(value.0, value.1)
+    }
+}
+
+impl ScoredPath {
+    pub fn new(score: f32, path: String) -> Self {
+        ScoredPath { score, path }
+    }
+}
+
+impl PartialOrd for ScoredPath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.score > other.score {
+            Some(Ordering::Less)
+        } else if self.score < other.score {
+            Some(Ordering::Greater)
+        } else {
+            Some(Ordering::Equal)
+        }
+    }
+}
 
 fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
     // Currently this is implemented using a dynamic programming solution similar
@@ -100,11 +128,9 @@ pub fn score_paths(
         .iter()
         .map(|path| cleanse_path(path))
         .filter(|path| path != cleansed_path)
-        .map(|path| {
-            (
-                score(cleansed_path, &path, filename_weight, path_weight),
-                path,
-            )
+        .map(|path| ScoredPath {
+            score: score(cleansed_path, &path, filename_weight, path_weight),
+            path,
         })
         .collect()
 }
@@ -124,10 +150,10 @@ mod tests {
         let scored_paths = score_paths(paths, "hoopty/doopty/foopty.ts", 10.0, 1.0);
 
         assert_eq!(scored_paths.len(), 2);
-        assert_eq!(scored_paths[0].1, "foo/bar/car.ts".to_owned());
-        assert_eq!(scored_paths[1].1, "home/away/lets_play.ts".to_owned());
-        assert!(scored_paths[0].0 > 0.0);
-        assert!(scored_paths[1].0 > 0.0);
+        assert_eq!(scored_paths[0].path, "foo/bar/car.ts".to_owned());
+        assert_eq!(scored_paths[1].path, "home/away/lets_play.ts".to_owned());
+        assert!(scored_paths[0].score > 0.0);
+        assert!(scored_paths[1].score > 0.0);
     }
 
     #[test]
@@ -141,12 +167,12 @@ mod tests {
         let scored_paths = score_paths(paths, "person/place/thing.ts", 10.0, 1.0);
 
         assert_eq!(scored_paths.len(), 3);
-        assert_eq!(scored_paths[0].1, "foo/bar/car.ts".to_owned());
-        assert_eq!(scored_paths[1].1, "hoopty/doopty/foopty.ts".to_owned());
-        assert_eq!(scored_paths[2].1, "home/away/lets_play.ts".to_owned());
-        assert!(scored_paths[0].0 > 0.0);
-        assert!(scored_paths[1].0 > 0.0);
-        assert!(scored_paths[2].0 > 0.0);
+        assert_eq!(scored_paths[0].path, "foo/bar/car.ts".to_owned());
+        assert_eq!(scored_paths[1].path, "hoopty/doopty/foopty.ts".to_owned());
+        assert_eq!(scored_paths[2].path, "home/away/lets_play.ts".to_owned());
+        assert!(scored_paths[0].score > 0.0);
+        assert!(scored_paths[1].score > 0.0);
+        assert!(scored_paths[2].score > 0.0);
     }
 
     #[test]

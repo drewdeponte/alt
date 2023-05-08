@@ -108,7 +108,7 @@ fn parse_args_or_exit() -> Options {
 fn scored_paths_to_string(scored_paths: &[ScoredPath]) -> String {
     let matches: Vec<String> = scored_paths
         .iter()
-        .map(|(_, path)| path.to_string())
+        .map(|scored_path| scored_path.path.clone())
         // .map(|(score, path)| format!("{:?} {}", score, path.to_string()))
         .collect();
 
@@ -217,9 +217,9 @@ mod tests {
     #[test]
     fn scored_paths_to_string_with_some_scored_paths() {
         let scored_paths: Vec<ScoredPath> = vec![
-            (0.3, "some/path/to/a/file.ts".to_owned()),
-            (0.2, "another/path/to/a/foo.ts".to_owned()),
-            (0.1, "foo/bar/car/zar.ts".to_owned()),
+            ScoredPath::new(0.3, "some/path/to/a/file.ts".to_owned()),
+            ScoredPath::new(0.2, "another/path/to/a/foo.ts".to_owned()),
+            ScoredPath::new(0.1, "foo/bar/car/zar.ts".to_owned()),
         ];
         let val = scored_paths_to_string(&scored_paths);
 
