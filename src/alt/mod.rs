@@ -33,6 +33,10 @@ pub fn find_alt_with_threads(
     filename_weight: f32,
     path_weight: f32,
 ) -> Result<Vec<ScoredPath>, FindAltWithThreadsError> {
+    if paths.is_empty() {
+        return Ok(vec![]);
+    }
+
     // get the parallel potential
     let parallel_est = thread::available_parallelism()
         .map_err(|_| FindAltWithThreadsError::NoAvailableParallelism)?;
@@ -93,7 +97,9 @@ fn truncate_scored_paths(scored_paths: &mut Vec<ScoredPath>, len: usize) {
 
 #[cfg(test)]
 mod tests {
-    use super::{find_alt, order_scored_paths, truncate_scored_paths, ScoredPath};
+    use super::{
+        find_alt, find_alt_with_threads, order_scored_paths, truncate_scored_paths, ScoredPath,
+    };
 
     #[test]
     fn truncate_scored_paths_with_zero_len() {
@@ -292,5 +298,22 @@ mod tests {
                 "src/database/nft-wallet/nft-wallet.repository.spec.ts"
             ]
         )
+    }
+
+    #[test]
+    fn find_alt_with_no_paths() {
+        let paths: Vec<String> = vec![];
+        let scored_paths: Vec<ScoredPath> =
+            find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0);
+        assert_eq!(scored_paths.len(), 0);
+    }
+
+    #[test]
+    fn find_alt_with_threads_with_no_paths() {
+        let paths: Vec<String> = vec![];
+        let scored_paths: Vec<ScoredPath> =
+            find_alt_with_threads("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0)
+                .expect("Failed to find parallelism");
+        assert_eq!(scored_paths.len(), 0);
     }
 }
