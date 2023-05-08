@@ -7,4 +7,4 @@ authors = [ "Drew De Ponte <cyphactor@gmail.com>", "Brian Miller <brimil01@gmail
 [dependencies]
 
 argparse = "0.2.2"
-ignore = "0.4.17"
+ignore = "0.4.20"
