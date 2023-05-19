@@ -10,6 +10,10 @@ that you can set version constraints properly.
 
 #### [Unreleased][unreleased]
 
+#### [v4.1.0][v4.1.0] - 2023-05-19
+
+* `Changed`: path scoring algorithm to include leading edge filename scoring & weight
+
 #### [v4.0.0][v4.0.0] - 2023-05-08
 
 * `Added`: multi-line/multi-alternate output
@@ -113,3 +117,4 @@ that you can set version constraints properly.
 [v3.3.0]: https://github.com/uptech/alt/compare/v3.2.0...v3.3.0
 [v3.4.0]: https://github.com/uptech/alt/compare/v3.3.0...v3.4.0
 [v4.0.0]: https://github.com/uptech/alt/compare/v3.4.0...v4.0.0
+[v4.1.0]: https://github.com/uptech/alt/compare/v4.0.0...v4.1.0
