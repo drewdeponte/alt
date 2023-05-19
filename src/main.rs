@@ -26,6 +26,7 @@ struct Options {
     possible_alternates_path: Option<String>,
     include_hidden: bool,
     truncate: usize,
+    leading_edge_filename_weight: f32,
     filename_weight: f32,
     path_weight: f32,
     use_threads: bool,
@@ -53,6 +54,7 @@ fn parse_args_or_exit() -> Options {
         possible_alternates_path: None,
         include_hidden: false,
         truncate: 0,
+        leading_edge_filename_weight: 100.0,
         filename_weight: 10.0,
         path_weight: 1.0,
         use_threads: false,
@@ -70,6 +72,11 @@ fn parse_args_or_exit() -> Options {
             &["-t", "--truncate"],
             Store,
             "truncate results to provided length. 0 = don't truncate, > 0 = truncate",
+        );
+        ap.refer(&mut options.leading_edge_filename_weight).add_option(
+            &["--leading-edge-filename-weight"],
+            Store,
+            "override the default weight of leading edge filenames in the scoring algorithm (default: 100.0)",
         );
         ap.refer(&mut options.filename_weight).add_option(
             &["--filename-weight"],
@@ -133,6 +140,7 @@ fn main() {
                     &cleansed_path,
                     paths,
                     options.truncate,
+                    options.leading_edge_filename_weight,
                     options.filename_weight,
                     options.path_weight,
                 )
@@ -141,6 +149,7 @@ fn main() {
                     &cleansed_path,
                     paths,
                     options.truncate,
+                    options.leading_edge_filename_weight,
                     options.filename_weight,
                     options.path_weight,
                 ),
@@ -161,6 +170,7 @@ fn main() {
                     &cleansed_path,
                     paths,
                     options.truncate,
+                    options.leading_edge_filename_weight,
                     options.filename_weight,
                     options.path_weight,
                 )
@@ -169,6 +179,7 @@ fn main() {
                     &cleansed_path,
                     paths,
                     options.truncate,
+                    options.leading_edge_filename_weight,
                     options.filename_weight,
                     options.path_weight,
                 ),
@@ -185,6 +196,7 @@ fn main() {
                 &cleansed_path,
                 unwrapped_paths,
                 options.truncate,
+                options.leading_edge_filename_weight,
                 options.filename_weight,
                 options.path_weight,
             )
@@ -193,6 +205,7 @@ fn main() {
                 &cleansed_path,
                 unwrapped_paths,
                 options.truncate,
+                options.leading_edge_filename_weight,
                 options.filename_weight,
                 options.path_weight,
             ),

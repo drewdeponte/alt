@@ -50,18 +50,62 @@ fn find_longest_common_substring_length(s1: &str, s2: &str) -> i32 {
     longest_length
 }
 
-fn similarity_ratio(s1: &str, s2: &str) -> f32 {
-    let longest_common_substring_len = find_longest_common_substring_length(s1, s2) as f32;
+fn find_longest_leading_edge_common_substring_length(s1: &str, s2: &str) -> i32 {
+    if s1.is_empty() || s2.is_empty() {
+        return 0;
+    }
 
+    let (shortest_bytes, longest_bytes) = if s1.len() < s2.len() {
+        (s1.as_bytes(), s2.as_bytes())
+    } else {
+        (s2.as_bytes(), s1.as_bytes())
+    };
+
+    let mut longest_length = 0;
+
+    for i in 0..shortest_bytes.len() {
+        if shortest_bytes[i] == longest_bytes[i] {
+            longest_length += 1;
+        } else {
+            break;
+        }
+    }
+
+    longest_length
+}
+
+fn similarity_ratio(s1: &str, s2: &str) -> f32 {
     if s1.is_empty() || s2.is_empty() {
         return 0.0;
     }
+
+    let longest_common_substring_len = find_longest_common_substring_length(s1, s2) as f32;
 
     (longest_common_substring_len / s1.len() as f32)
         * (longest_common_substring_len / s2.len() as f32)
 }
 
-fn score(s1: &str, s2: &str, filename_weight: f32, path_weight: f32) -> f32 {
+fn leading_edge_similarity_ratio(s1: &str, s2: &str) -> f32 {
+    if s1.is_empty() || s2.is_empty() {
+        return 0.0;
+    }
+
+    // find the longest leading edge common substring length
+    let longest_common_substring_len =
+        find_longest_leading_edge_common_substring_length(s1, s2) as f32;
+
+    // (longest_common_substring_len / s1.len() as f32)
+    //     * (longest_common_substring_len / s2.len() as f32)
+    longest_common_substring_len / s1.len() as f32
+}
+
+fn score(
+    s1: &str,
+    s2: &str,
+    leading_edge_filename_weight: f32,
+    filename_weight: f32,
+    path_weight: f32,
+) -> f32 {
     let path1 = Path::new(s1);
     let path2 = Path::new(s2);
 
@@ -71,6 +115,8 @@ fn score(s1: &str, s2: &str, filename_weight: f32, path_weight: f32) -> f32 {
     ) {
         (Some(path1_filename), Some(path2_filename)) => {
             let filename_score = similarity_ratio(path1_filename, path2_filename);
+            let leading_edge_filename_score =
+                leading_edge_similarity_ratio(path1_filename, path2_filename);
 
             let path_score = match (
                 path1.parent().and_then(|f| f.to_str()),
@@ -83,8 +129,10 @@ fn score(s1: &str, s2: &str, filename_weight: f32, path_weight: f32) -> f32 {
                 _ => 0.0,            // one has path but other doesn't, can't be any similarity
             };
 
-            // filename_score + path_score
-            (filename_weight * filename_score) + (path_weight * path_score)
+            // leading_edge_filename_score + filename_score + path_score
+            (leading_edge_filename_weight * leading_edge_filename_score)
+                + (filename_weight * filename_score)
+                + (path_weight * path_score)
         }
         _ => 0.0,
     }
@@ -93,6 +141,7 @@ fn score(s1: &str, s2: &str, filename_weight: f32, path_weight: f32) -> f32 {
 pub fn score_paths(
     paths: Vec<String>,
     cleansed_path: &str,
+    leading_edge_filename_weight: f32,
     filename_weight: f32,
     path_weight: f32,
 ) -> Vec<ScoredPath> {
@@ -102,7 +151,13 @@ pub fn score_paths(
         .filter(|path| path != cleansed_path)
         .map(|path| {
             (
-                score(cleansed_path, &path, filename_weight, path_weight),
+                score(
+                    cleansed_path,
+                    &path,
+                    leading_edge_filename_weight,
+                    filename_weight,
+                    path_weight,
+                ),
                 path,
             )
         })
@@ -111,7 +166,10 @@ pub fn score_paths(
 
 #[cfg(test)]
 mod tests {
-    use super::{score, score_paths, similarity_ratio};
+    use super::{
+        find_longest_leading_edge_common_substring_length, leading_edge_similarity_ratio, score,
+        score_paths, similarity_ratio,
+    };
 
     #[test]
     fn score_paths_with_same_path_it_should_filter_same_path() {
@@ -121,7 +179,7 @@ mod tests {
             "home/away/lets_play.ts".to_owned(),
         ];
 
-        let scored_paths = score_paths(paths, "hoopty/doopty/foopty.ts", 10.0, 1.0);
+        let scored_paths = score_paths(paths, "hoopty/doopty/foopty.ts", 100.0, 10.0, 1.0);
 
         assert_eq!(scored_paths.len(), 2);
         assert_eq!(scored_paths[0].1, "foo/bar/car.ts".to_owned());
@@ -138,7 +196,7 @@ mod tests {
             "home/away/lets_play.ts".to_owned(),
         ];
 
-        let scored_paths = score_paths(paths, "person/place/thing.ts", 10.0, 1.0);
+        let scored_paths = score_paths(paths, "person/place/thing.ts", 100.0, 10.0, 1.0);
 
         assert_eq!(scored_paths.len(), 3);
         assert_eq!(scored_paths[0].1, "foo/bar/car.ts".to_owned());
@@ -151,55 +209,55 @@ mod tests {
 
     #[test]
     fn score_paths_that_have_no_similarity_as_zero() {
-        let val = score("abc/d", "xyz/e", 10.0, 1.0);
+        let val = score("abc/d", "xyz/e", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
     }
 
     #[test]
     fn score_paths_where_filenames_only_but_no_similarity_as_zero() {
-        let val = score("foo", "bar", 10.0, 1.0);
+        let val = score("foo", "bar", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
     }
 
     #[test]
     fn score_paths_where_doesnot_have_file_name_as_zero() {
-        let val = score("/", "foo/bar/zar", 10.0, 1.0);
+        let val = score("/", "foo/bar/zar", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("/..", "foo/bar/zar", 10.0, 1.0);
+        let val = score("/..", "foo/bar/zar", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("", "foo/bar/zar", 10.0, 1.0);
+        let val = score("", "foo/bar/zar", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("..", "foo/bar/zar", 10.0, 1.0);
+        let val = score("..", "foo/bar/zar", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("foo/bar/zar", "/", 10.0, 1.0);
+        let val = score("foo/bar/zar", "/", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("foo/bar/zar", "/..", 10.0, 1.0);
+        let val = score("foo/bar/zar", "/..", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("foo/bar/zar", "", 10.0, 1.0);
+        let val = score("foo/bar/zar", "", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
-        let val = score("foo/bar/zar", "..", 10.0, 1.0);
+        let val = score("foo/bar/zar", "..", 100.0, 10.0, 1.0);
         assert_eq!(val, 0.0);
     }
 
     #[test]
     fn score_paths_that_have_similar_files_over_similar_dirs() {
-        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
-        let val_b = score("aaa/ddd/hoopty.ts", "aaa/ddd/car.ts", 10.0, 1.0);
+        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
+        let val_b = score("aaa/ddd/hoopty.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
         assert!(val_a > val_b);
     }
 
     #[test]
     fn score_paths_that_have_similar_dirs_over_ones_that_dont_when_files_match() {
-        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
-        let val_b = score("ppp/ddd/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
+        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
+        let val_b = score("ppp/ddd/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
         assert!(val_b > val_a);
     }
 
     #[test]
     fn score_paths_based_on_similarity_with_filename_having_presedence() {
-        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
-        let val_b = score("ppp/ddd/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
-        let val_c = score("aaa/ddd/car.ts", "aaa/ddd/car.ts", 10.0, 1.0);
+        let val_a = score("foo/bar/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
+        let val_b = score("ppp/ddd/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
+        let val_c = score("aaa/ddd/car.ts", "aaa/ddd/car.ts", 100.0, 10.0, 1.0);
         assert!(val_c > val_b);
         assert!(val_b > val_a);
     }
@@ -216,5 +274,61 @@ mod tests {
         let val_a = similarity_ratio("foobarcar", "bar");
         let val_b = similarity_ratio("abc", "b");
         assert_eq!(val_a, val_b);
+    }
+
+    #[test]
+    fn find_longest_leading_edge_common_substring_length_returns_zero_when_s1_is_empty() {
+        let length = find_longest_leading_edge_common_substring_length("", "aoeuaoeu");
+        assert_eq!(length, 0);
+    }
+
+    #[test]
+    fn find_longest_leading_edge_common_substring_length_returns_zero_when_s2_is_empty() {
+        let length = find_longest_leading_edge_common_substring_length("aoeuaoeu", "");
+        assert_eq!(length, 0);
+    }
+
+    #[test]
+    fn find_longest_leading_edge_common_substring_length_returns_zero_when_strings_do_not_have_leading_edge_match(
+    ) {
+        let length = find_longest_leading_edge_common_substring_length("aoeuaoeu", "boeuaoeu");
+        assert_eq!(length, 0);
+    }
+
+    #[test]
+    fn find_longest_leading_edge_common_substring_length_returns_length_of_leading_edge_match() {
+        let length = find_longest_leading_edge_common_substring_length("aoeuaoeu", "aoexyoeu");
+        assert_eq!(length, 3);
+    }
+
+    #[test]
+    fn find_longest_leading_edge_common_substring_length_returns_length_of_another_leading_edge_match(
+    ) {
+        let length = find_longest_leading_edge_common_substring_length("aoeuaoep", "aoeuaoeuxyz");
+        assert_eq!(length, 7);
+    }
+
+    #[test]
+    fn leading_edge_similarity_ratio_is_zero_when_s1_is_empty() {
+        let similarity_ratio = leading_edge_similarity_ratio("", "aoeuaoeua");
+        assert_eq!(similarity_ratio, 0.0);
+    }
+
+    #[test]
+    fn leading_edge_similarity_ratio_is_zero_when_s2_is_empty() {
+        let similarity_ratio = leading_edge_similarity_ratio("aoeuaoeua", "");
+        assert_eq!(similarity_ratio, 0.0);
+    }
+
+    #[test]
+    fn leading_edge_similarity_ratio_computes_similarity_ratio() {
+        let similarity_ratio = leading_edge_similarity_ratio("hello", "helloworld");
+        assert_eq!(similarity_ratio, 1.0);
+    }
+
+    #[test]
+    fn leading_edge_similarity_ratio_computes_other_similarity_ratio() {
+        let similarity_ratio = leading_edge_similarity_ratio("hellogoody", "helloworldhelloagain");
+        assert_eq!(similarity_ratio, 0.5);
     }
 }

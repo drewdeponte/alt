@@ -8,11 +8,17 @@ pub fn find_alt(
     cleansed_path: &str,
     paths: Vec<String>,
     truncate_len: usize,
+    leading_edge_filename_weight: f32,
     filename_weight: f32,
     path_weight: f32,
 ) -> Vec<ScoredPath> {
-    let mut possible_paths_with_scores: Vec<ScoredPath> =
-        score_paths(paths, cleansed_path, filename_weight, path_weight);
+    let mut possible_paths_with_scores: Vec<ScoredPath> = score_paths(
+        paths,
+        cleansed_path,
+        leading_edge_filename_weight,
+        filename_weight,
+        path_weight,
+    );
 
     possible_paths_with_scores.sort_by(order_scored_paths);
 
@@ -30,6 +36,7 @@ pub fn find_alt_with_threads(
     cleansed_path: &str,
     paths: Vec<String>,
     truncate_len: usize,
+    leading_edge_filename_weight: f32,
     filename_weight: f32,
     path_weight: f32,
 ) -> Result<Vec<ScoredPath>, FindAltWithThreadsError> {
@@ -49,12 +56,14 @@ pub fn find_alt_with_threads(
     for chunk in paths.chunks(chunk_size) {
         let threads_paths: Vec<String> = chunk.to_vec();
         let threads_cleansed_path: String = cleansed_path.to_owned();
+        let threads_leading_edge_filename_weight: f32 = leading_edge_filename_weight;
         let threads_filename_weight: f32 = filename_weight;
         let threads_path_weight: f32 = path_weight;
         let thread_handle = std::thread::spawn(move || {
             score_paths(
                 threads_paths,
                 &threads_cleansed_path,
+                threads_leading_edge_filename_weight,
                 threads_filename_weight,
                 threads_path_weight,
             )
@@ -171,7 +180,7 @@ mod tests {
             "src/database/nft-wallet/nft-wallet.repository.ts".to_owned(),
         ];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
+            find_alt("src/models/nft-wallet.ts", paths, 0, 100.0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
         assert!(scored_paths[0].0 > scored_paths[1].0);
         assert!(scored_paths[1].0 > scored_paths[2].0);
@@ -202,7 +211,7 @@ mod tests {
             "src/database/nft-wallet/nft-wallet.repository.ts".to_owned(),
         ];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
+            find_alt("src/models/nft-wallet.ts", paths, 0, 100.0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
 
         let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
@@ -228,7 +237,7 @@ mod tests {
             "src/database/nft-wallet/nft-wallet.repository.ts".to_owned(),
         ];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 3, 10.0, 1.0);
+            find_alt("src/models/nft-wallet.ts", paths, 3, 100.0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 3);
         assert!(scored_paths[0].0 > scored_paths[1].0);
         assert!(scored_paths[1].0 > scored_paths[2].0);
@@ -254,7 +263,7 @@ mod tests {
             "src/database/nft-wallet/nft-wallet.repository.ts".to_owned(),
         ];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 0, 10.0, 1.0);
+            find_alt("src/models/nft-wallet.ts", paths, 0, 100.0, 10.0, 1.0);
         assert_eq!(scored_paths.len(), 5);
         assert!(scored_paths[0].0 > scored_paths[1].0);
         assert!(scored_paths[1].0 > scored_paths[2].0);
@@ -284,7 +293,7 @@ mod tests {
             "src/database/nft-wallet/nft-wallet.repository.ts".to_owned(),
         ];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0);
+            find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 1.0, 10.0);
         assert_eq!(scored_paths.len(), 5);
 
         let stripped_scored_paths: Vec<String> = scored_paths.into_iter().map(|s| s.1).collect();
@@ -304,7 +313,7 @@ mod tests {
     fn find_alt_with_no_paths() {
         let paths: Vec<String> = vec![];
         let scored_paths: Vec<ScoredPath> =
-            find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0);
+            find_alt("src/models/nft-wallet.ts", paths, 0, 1.0, 1.0, 10.0);
         assert_eq!(scored_paths.len(), 0);
     }
 
@@ -312,7 +321,7 @@ mod tests {
     fn find_alt_with_threads_with_no_paths() {
         let paths: Vec<String> = vec![];
         let scored_paths: Vec<ScoredPath> =
-            find_alt_with_threads("src/models/nft-wallet.ts", paths, 0, 1.0, 10.0)
+            find_alt_with_threads("src/models/nft-wallet.ts", paths, 0, 1.0, 1.0, 10.0)
                 .expect("Failed to find parallelism");
         assert_eq!(scored_paths.len(), 0);
     }
