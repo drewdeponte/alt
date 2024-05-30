@@ -40,7 +40,7 @@ app/bar/car/user_goal.rb
 app/queues/modification/vehicle.rb
 ```
 
-![Demo](https://raw.github.com/uptech/alt/master/resources/demo-with-telescope.gif)
+![Demo](https://raw.github.com/drewdeponte/alt/master/resources/demo-with-telescope.gif)
 
 For advanced usage & full reference of the command line interface, please refer
 to the man page via `man alt`.
@@ -58,13 +58,13 @@ the `alt` formula. You can use it by doing the following:
 #### Add the Tap
 
 ```
-brew tap "uptech/homebrew-oss"
+brew tap "drewdeponte/oss"
 ```
 
 #### brew install
 
 ```
-brew install uptech/oss/alt
+brew install drewdeponte/oss/alt
 ```
 
 ### Arch Linux
@@ -180,20 +180,13 @@ contributing.
 
 ## License
 
-`alt` is Copyright © 2016 - 2023 UpTech Works, LLC. It is free software, and
-may be redistributed under the terms specified in the LICENSE file.
+`alt` is free software, and may be redistributed under the terms specified in
+the LICENSE file.
 
-## About Uptech Studio
+## About
 
-`alt` is maintained and funded by [Uptech Studio][uptech], a
-software design & development studio.
+`alt` is maintained and funded by [Drew De Ponte][drewdeponte].
 
-We love open source software. See [our other projects][community] or
-[hire us][hire] to design, develop, and grow your product.
-
-[community]: https://github.com/uptech
-[hire]: http://uptechstudio.com
-[uptech]: http://uptechstudio.com
 [Rust]: https://www.rust-lang.org
 [rust]: https://www.rust-lang.org
 [telescope]: https://github.com/nvim-telescope/telescope.nvim
